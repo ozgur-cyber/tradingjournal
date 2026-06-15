@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, MessageSquare, Heart, Share2, Rocket, UserPlus, UserCheck, Send, TrendingUp, TrendingDown, BarChart3, Target, Clock, Flame, Trophy, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, MessageSquare, Heart, Rocket, UserPlus, UserCheck, Send, TrendingUp, TrendingDown, BarChart3, Target, Clock, Flame, Trophy, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
@@ -198,10 +198,9 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
   const isFollowing = followedUsers.includes(trade.username);
   const tradeComments = comments.filter(c => c.tradeId === trade.id);
   
-  const [baseLikeCount] = useState(Math.floor(Math.random() * 20)); 
+  const [baseLikeCount] = useState(0); 
   const totalLikes = baseLikeCount + (isLiked ? 1 : 0);
   
-  const [isSharing, setIsSharing] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -214,11 +213,6 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
     if (trade.username) toggleFollow(trade.username);
   };
 
-  const handleShare = () => {
-    setIsSharing(true);
-    navigator.clipboard.writeText(`https://novatrade.com/trade/${trade.id}`);
-    setTimeout(() => setIsSharing(false), 2000);
-  };
 
   const submitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,13 +388,6 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
           >
             <MessageSquare className="w-[18px] h-[18px]" />
             <span className="text-xs font-bold">{tradeComments.length > 0 ? `${tradeComments.length} Yorum` : 'Yorum'}</span>
-          </button>
-          <button 
-            onClick={handleShare}
-            className={`flex items-center space-x-2 transition-all ml-auto ${isSharing ? 'text-brand-success' : 'text-text-secondary hover:text-text-primary'}`}
-          >
-            <Share2 className="w-[18px] h-[18px]" />
-            <span className="text-xs font-bold">{isSharing ? 'Kopyalandı!' : 'Paylaş'}</span>
           </button>
         </div>
 
