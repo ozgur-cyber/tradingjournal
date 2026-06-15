@@ -74,8 +74,8 @@ const Register = () => {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Aramıza Katıl</h2>
-            <p className="text-gray-400">Trade günlüğünüzü oluşturmak için ücretsiz kayıt olun</p>
+            <h2 className="text-2xl font-bold text-text-primary mb-2">Aramıza Katıl</h2>
+            <p className="text-text-secondary">Trade günlüğünüzü oluşturmak için ücretsiz kayıt olun</p>
           </div>
 
           {error && (
@@ -86,39 +86,39 @@ const Register = () => {
 
           <form onSubmit={handleRegister} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Kullanıcı Adı</label>
+              <label className="text-sm font-medium text-text-secondary ml-1">Kullanıcı Adı</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                 <input 
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Trader adınız" 
                   required
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all"
+                  className="w-full bg-bg-primary border border-border-primary rounded-xl py-3 pl-12 pr-4 text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">E-posta</label>
+              <label className="text-sm font-medium text-text-secondary ml-1">E-posta</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                 <input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value.replace(/ı/g, 'i').replace(/İ/g, 'i'))}
                   placeholder="ornek@email.com" 
                   required
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all"
+                  className="w-full bg-bg-primary border border-border-primary rounded-xl py-3 pl-12 pr-4 text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Şifre</label>
+              <label className="text-sm font-medium text-text-secondary ml-1">Şifre</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                 <input 
                   type="password" 
                   value={password}
@@ -126,7 +126,7 @@ const Register = () => {
                   placeholder="••••••••" 
                   required
                   minLength={6}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all"
+                  className="w-full bg-bg-primary border border-border-primary rounded-xl py-3 pl-12 pr-4 text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all"
                 />
               </div>
             </div>
@@ -147,12 +147,11 @@ const Register = () => {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-gray-400">
-            Zaten hesabınız var mı?{' '}
-            <Link to="/login" className="text-brand-purple font-bold hover:text-brand-purple/80 transition-colors">
-              Giriş Yap
-            </Link>
-          </p>
+          <div className="mt-8 text-center">
+            <p className="text-text-secondary text-sm">
+              Zaten hesabınız var mı? <Link to="/login" className="font-bold text-brand-purple hover:text-brand-purple/80 transition-colors">Giriş Yap</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

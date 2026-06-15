@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { supabase } from '@/lib/supabase/config';
-import { Shield, User, Bell, Palette, Lock, Activity, CheckCircle, AlertCircle } from 'lucide-react';
+import { Shield, User, Palette, Lock, Activity, CheckCircle, AlertCircle } from 'lucide-react';
 
 const Settings = () => {
   const { userData, user } = useAuthStore();
