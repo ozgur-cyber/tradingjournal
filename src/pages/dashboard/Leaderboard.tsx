@@ -9,6 +9,7 @@ interface LeaderboardUser {
   total_pnl: number;
   win_rate: number;
   total_trades: number;
+  average_rr?: number;
 }
 
 const Leaderboard = () => {
@@ -30,7 +31,25 @@ const Leaderboard = () => {
         .limit(10);
 
       if (error) throw error;
-      if (data) setUsers(data);
+      
+      if (data && data.length > 0) {
+        const userIds = data.map(u => u.id);
+        const { data: tradesData } = await supabase
+          .from('trades')
+          .select('user_id, risk_reward')
+          .in('user_id', userIds);
+
+        const usersWithRR = data.map(user => {
+          const userTrades = tradesData?.filter(t => t.user_id === user.id) || [];
+          const totalRR = userTrades.reduce((sum, t) => sum + (Number(t.risk_reward) || 0), 0);
+          const avgRR = userTrades.length > 0 ? totalRR / userTrades.length : 0;
+          return { ...user, average_rr: avgRR };
+        });
+
+        setUsers(usersWithRR);
+      } else {
+        setUsers([]);
+      }
     } catch (error) {
       console.error("Leaderboard verisi getirilirken hata:", error);
     } finally {
@@ -67,6 +86,7 @@ const Leaderboard = () => {
                     <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Trader</th>
                     <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider text-center hidden sm:table-cell">İşlem</th>
                     <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider text-center hidden sm:table-cell">Win Rate</th>
+                    <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider text-center hidden md:table-cell">Ort. RR</th>
                     <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider text-right">Toplam PnL</th>
                   </tr>
                 </thead>
@@ -111,9 +131,14 @@ const Leaderboard = () => {
                         <span className="text-text-secondary font-medium">{user.total_trades}</span>
                       </td>
                       <td className="p-5 text-center hidden sm:table-cell">
-                        <div className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-brand-success/10 text-brand-success border border-brand-success/20">
-                          %{(user.win_rate || 0).toFixed(1)}
-                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${
+                          user.win_rate >= 50 ? 'bg-brand-success/10 text-brand-success' : 'bg-brand-danger/10 text-brand-danger'
+                        }`}>
+                          %{user.win_rate.toFixed(1)}
+                        </span>
+                      </td>
+                      <td className="p-5 text-center hidden md:table-cell">
+                        <span className="text-text-primary font-bold">{user.average_rr ? user.average_rr.toFixed(2) : '0.00'}R</span>
                       </td>
                       <td className="p-5 text-right">
                         <span className="text-xl font-black text-brand-success drop-shadow-[0_0_10px_rgba(16,185,129,0.2)]">
