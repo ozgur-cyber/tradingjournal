@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, MessageSquare, Heart, Share2, Rocket, UserPlus, UserCheck, Send } from 'lucide-react';
+import { Users, MessageSquare, Heart, Share2, Rocket, UserPlus, UserCheck, Send, TrendingUp, TrendingDown, BarChart3, Target, Clock, Flame, Trophy, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
@@ -13,8 +13,12 @@ interface SocialTrade {
   notes: string;
   pnl: number;
   created_at: string;
+  entry_price?: number;
+  exit_price?: number;
+  lot_size?: number;
   users: {
     role: string;
+    avatar_url?: string;
   };
 }
 
@@ -34,11 +38,11 @@ const Social = () => {
       const { data, error } = await supabase
         .from('trades')
         .select(`
-          id, username, pair, direction, strategy, notes, pnl, created_at,
-          users (role)
+          id, username, pair, direction, strategy, notes, pnl, created_at, entry_price, exit_price, lot_size,
+          users (role, avatar_url)
         `)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
 
       if (error) throw error;
       if (data) {
@@ -67,50 +71,121 @@ const Social = () => {
     ? trades.filter(t => followedUsers.includes(t.username))
     : trades;
 
+  // Stats
+  const totalWins = trades.filter(t => t.pnl >= 0).length;
+  const totalLosses = trades.filter(t => t.pnl < 0).length;
+  const totalPnl = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+  const hotPair = trades.length > 0 
+    ? Object.entries(trades.reduce((acc: Record<string, number>, t) => { acc[t.pair] = (acc[t.pair] || 0) + 1; return acc; }, {})).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'
+    : '-';
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-10 animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-4xl mx-auto space-y-6 pb-10 animate-fade-in">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-2">
         <div>
-          <h2 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-            Sosyal Akış <Rocket className="w-5 h-5 text-brand-purple" />
+          <h2 className="text-4xl font-black bg-gradient-to-r from-brand-purple via-[#a855f7] to-brand-blue bg-clip-text text-transparent tracking-tight flex items-center gap-3">
+            Sosyal Akış <Rocket className="w-7 h-7 text-brand-purple" />
           </h2>
-          <p className="text-text-secondary text-sm mt-1">Diğer trader'ların paylaştığı işlemleri ve analizleri inceleyin.</p>
+          <p className="text-text-secondary text-sm mt-2 font-medium">Diğer trader'ların paylaştığı işlemleri ve analizleri inceleyin.</p>
         </div>
         <button 
           onClick={() => setFilterFollowing(!filterFollowing)}
-          className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium border ${
+          className={`px-5 py-2.5 rounded-xl transition-all text-sm font-semibold border shadow-sm ${
             filterFollowing 
-              ? 'bg-brand-purple text-white border-brand-purple' 
-              : 'bg-bg-surface-hover dark:bg-brand-surface border-border-primary text-text-primary hover:bg-bg-surface'
+              ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(139,92,246,0.3)]' 
+              : 'bg-bg-surface-hover dark:bg-[#131320]/60 border-border-primary text-text-primary hover:border-brand-purple/30'
           }`}
         >
-          Sadece Takip Ettiklerim
+          {filterFollowing ? '✓ Takip Ettiklerim' : 'Sadece Takip Ettiklerim'}
         </button>
       </div>
 
+      {/* Live Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="glassmorphism p-4 rounded-2xl relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Toplam İşlem</p>
+              <p className="text-2xl font-black text-text-primary mt-1">{trades.length}</p>
+            </div>
+            <div className="p-2.5 bg-brand-blue/15 rounded-xl text-brand-blue">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-brand-blue/10 blur-2xl rounded-full pointer-events-none"></div>
+        </div>
+        <div className="glassmorphism p-4 rounded-2xl relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Win / Loss</p>
+              <p className="text-2xl font-black text-text-primary mt-1">
+                <span className="text-brand-success">{totalWins}</span>
+                <span className="text-text-secondary mx-1">/</span>
+                <span className="text-brand-danger">{totalLosses}</span>
+              </p>
+            </div>
+            <div className="p-2.5 bg-brand-success/15 rounded-xl text-brand-success">
+              <Trophy className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-brand-success/10 blur-2xl rounded-full pointer-events-none"></div>
+        </div>
+        <div className="glassmorphism p-4 rounded-2xl relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Toplam PnL</p>
+              <p className={`text-2xl font-black mt-1 ${totalPnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                ${totalPnl.toFixed(0)}
+              </p>
+            </div>
+            <div className={`p-2.5 rounded-xl ${totalPnl >= 0 ? 'bg-brand-success/15 text-brand-success' : 'bg-brand-danger/15 text-brand-danger'}`}>
+              {totalPnl >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+            </div>
+          </div>
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-brand-purple/10 blur-2xl rounded-full pointer-events-none"></div>
+        </div>
+        <div className="glassmorphism p-4 rounded-2xl relative overflow-hidden group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">En Popüler</p>
+              <p className="text-2xl font-black text-brand-purple mt-1">{hotPair}</p>
+            </div>
+            <div className="p-2.5 bg-brand-danger/15 rounded-xl text-brand-danger">
+              <Flame className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-brand-danger/10 blur-2xl rounded-full pointer-events-none"></div>
+        </div>
+      </div>
+
+      {/* Feed */}
       {loading ? (
-        <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+        <div className="flex flex-col items-center justify-center p-16 space-y-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-brand-purple border-t-transparent"></div>
+          <p className="text-text-secondary text-sm">Akış yükleniyor...</p>
         </div>
       ) : trades.length === 0 ? (
-        <div className="glassmorphism p-12 rounded-2xl text-center">
-          <Users className="w-16 h-16 text-text-secondary mx-auto mb-4 opacity-50" />
-          <p className="text-text-secondary text-lg">
+        <div className="glassmorphism p-16 rounded-2xl text-center">
+          <Users className="w-20 h-20 text-text-secondary mx-auto mb-6 opacity-30" />
+          <p className="text-text-primary text-xl font-bold mb-2">
             {filterFollowing ? "Takip ettiğiniz kimse henüz işlem paylaşmadı." : "Platformda henüz hiç işlem paylaşılmadı."}
           </p>
-          <p className="text-text-secondary text-sm mt-2 opacity-70">
+          <p className="text-text-secondary text-sm">
             {filterFollowing ? "Daha fazla trader takip ederek akışınızı zenginleştirin." : "İlk işlemi siz paylaşın ve akışı başlatın!"}
           </p>
         </div>
       ) : displayTrades.length === 0 && filterFollowing ? (
-        <div className="glassmorphism p-12 rounded-2xl text-center">
-          <Users className="w-16 h-16 text-text-secondary mx-auto mb-4 opacity-50" />
-          <p className="text-text-secondary text-lg">Takip ettiğiniz trader'lar henüz işlem paylaşmadı.</p>
+        <div className="glassmorphism p-16 rounded-2xl text-center">
+          <Users className="w-20 h-20 text-text-secondary mx-auto mb-6 opacity-30" />
+          <p className="text-text-primary text-xl font-bold">Takip ettiğiniz trader'lar henüz işlem paylaşmadı.</p>
         </div>
       ) : (
-        displayTrades.map((trade) => (
-          <SocialCard key={trade.id} trade={trade} getTimeAgo={getTimeAgo} />
-        ))
+        <div className="space-y-5">
+          {displayTrades.map((trade) => (
+            <SocialCard key={trade.id} trade={trade} getTimeAgo={getTimeAgo} />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -123,12 +198,12 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
   const isFollowing = followedUsers.includes(trade.username);
   const tradeComments = comments.filter(c => c.tradeId === trade.id);
   
-  // Create a stable random like count so it doesn't change on re-renders, plus actual user likes
   const [baseLikeCount] = useState(Math.floor(Math.random() * 20)); 
   const totalLikes = baseLikeCount + (isLiked ? 1 : 0);
   
   const [isSharing, setIsSharing] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [newComment, setNewComment] = useState('');
 
   const handleLike = () => {
@@ -152,126 +227,221 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
     setNewComment('');
   };
 
+  const pnlPercent = trade.entry_price && trade.exit_price 
+    ? (((trade.exit_price - trade.entry_price) / trade.entry_price) * 100 * (trade.direction === 'SHORT' ? -1 : 1)).toFixed(2)
+    : null;
+
   return (
-    <div className="glassmorphism p-6 rounded-2xl space-y-4 hover:border-brand-purple/20 transition-colors">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-white font-bold shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-            {trade.username?.charAt(0).toUpperCase() || 'U'}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <Link to={`/profile/${trade.username}`} className="font-bold text-text-primary text-sm flex items-center hover:text-brand-purple transition-colors">
-                {trade.username || 'İsimsiz Trader'}
+    <div className="glassmorphism p-0 rounded-2xl overflow-hidden hover:border-brand-purple/30 transition-all group">
+      {/* Top accent bar */}
+      <div className={`h-1 ${trade.pnl >= 0 ? 'bg-gradient-to-r from-brand-success/80 to-brand-success/20' : 'bg-gradient-to-r from-brand-danger/80 to-brand-danger/20'}`}></div>
+      
+      <div className="p-6 space-y-4">
+        {/* User Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {trade.users?.avatar_url ? (
+              <img 
+                src={trade.users.avatar_url} 
+                alt={trade.username} 
+                className="w-11 h-11 rounded-full object-cover ring-2 ring-brand-purple/20 shadow-lg"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-white font-bold shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                {trade.username?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            )}
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link to={`/profile/${trade.username}`} className="font-bold text-text-primary text-sm flex items-center hover:text-brand-purple transition-colors">
+                  {trade.username || 'İsimsiz Trader'}
+                </Link>
                 {trade.users?.role === 'Founder' && (
-                  <span className="text-yellow-500 text-[10px] font-bold bg-yellow-500/10 px-2 py-0.5 rounded-full ml-2 border border-yellow-500/20">Founder</span>
+                  <span className="text-yellow-500 text-[10px] font-bold bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shadow-[0_0_8px_rgba(234,179,8,0.15)]">
+                    ⭐ Founder
+                  </span>
                 )}
-              </Link>
-              {trade.username && (
-                <button 
-                  onClick={handleFollow}
-                  className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors ${
-                    isFollowing 
-                      ? 'bg-brand-success/10 text-brand-success border border-brand-success/20' 
-                      : 'bg-brand-purple/10 text-brand-purple border border-brand-purple/20 hover:bg-brand-purple hover:text-white'
-                  }`}
-                >
-                  {isFollowing ? <><UserCheck className="w-3 h-3" /> Takip Ediliyor</> : <><UserPlus className="w-3 h-3" /> Takip Et</>}
-                </button>
+                {trade.users?.role === 'Admin' && (
+                  <span className="text-brand-danger text-[10px] font-bold bg-brand-danger/10 px-2 py-0.5 rounded-full border border-brand-danger/20">
+                    🛡️ Admin
+                  </span>
+                )}
+                {trade.username && (
+                  <button 
+                    onClick={handleFollow}
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1 transition-all font-semibold ${
+                      isFollowing 
+                        ? 'bg-brand-success/10 text-brand-success border border-brand-success/20' 
+                        : 'bg-brand-purple/10 text-brand-purple border border-brand-purple/20 hover:bg-brand-purple hover:text-white hover:shadow-[0_0_10px_rgba(139,92,246,0.3)]'
+                    }`}
+                  >
+                    {isFollowing ? <><UserCheck className="w-3 h-3" /> Takipte</> : <><UserPlus className="w-3 h-3" /> Takip Et</>}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Clock className="w-3 h-3 text-text-secondary" />
+                <p className="text-[11px] text-text-secondary">{getTimeAgo(trade.created_at)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* PnL Badge */}
+          <div className={`flex flex-col items-end`}>
+            <span className={`px-4 py-1.5 rounded-xl text-xs font-black border shadow-sm ${
+              trade.pnl >= 0 
+                ? 'bg-brand-success/15 text-brand-success border-brand-success/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' 
+                : 'bg-brand-danger/15 text-brand-danger border-brand-danger/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]'
+            }`}>
+              {trade.pnl >= 0 ? '▲ WIN' : '▼ LOSS'} ${Math.abs(trade.pnl).toFixed(2)}
+            </span>
+            {pnlPercent && (
+              <span className={`text-[10px] font-bold mt-1 ${Number(pnlPercent) >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                {Number(pnlPercent) >= 0 ? '+' : ''}{pnlPercent}%
+              </span>
+            )}
+          </div>
+        </div>
+        
+        {/* Trade Note */}
+        {trade.notes && (
+          <p className="text-text-secondary text-sm leading-relaxed pl-14">
+            {trade.notes}
+          </p>
+        )}
+
+        {/* Trade Info Card */}
+        <div className="bg-bg-surface-hover dark:bg-black/30 rounded-xl p-4 border border-border-primary ml-14">
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Parite</p>
+              <p className="text-sm font-black text-text-primary">{trade.pair}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Yön</p>
+              <div className="flex items-center gap-1.5">
+                {trade.direction === 'LONG' ? <TrendingUp className="w-3.5 h-3.5 text-brand-success" /> : <TrendingDown className="w-3.5 h-3.5 text-brand-danger" />}
+                <p className={`text-sm font-black ${trade.direction === 'LONG' ? 'text-brand-success' : 'text-brand-danger'}`}>
+                  {trade.direction}
+                </p>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Strateji</p>
+              <p className="text-sm font-bold text-brand-purple">{trade.strategy || 'Belirtilmedi'}</p>
+            </div>
+            {trade.entry_price && (
+              <div className="hidden md:block">
+                <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Giriş</p>
+                <p className="text-sm font-bold text-text-primary">${trade.entry_price}</p>
+              </div>
+            )}
+            {trade.exit_price && (
+              <div className="hidden md:block">
+                <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Çıkış</p>
+                <p className="text-sm font-bold text-text-primary">${trade.exit_price}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Expandable details */}
+          {(trade.entry_price || trade.lot_size) && (
+            <button 
+              onClick={() => setShowDetails(!showDetails)}
+              className="flex items-center gap-1 mt-3 text-[10px] text-text-secondary hover:text-brand-purple transition-colors font-semibold uppercase tracking-wider"
+            >
+              {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {showDetails ? 'Detayları Gizle' : 'Detayları Göster'}
+            </button>
+          )}
+
+          {showDetails && (
+            <div className="mt-3 pt-3 border-t border-border-primary grid grid-cols-3 gap-4 animate-fade-in">
+              {trade.entry_price && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Giriş Fiyatı</p>
+                  <p className="text-sm font-bold text-text-primary">${trade.entry_price}</p>
+                </div>
+              )}
+              {trade.exit_price && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Çıkış Fiyatı</p>
+                  <p className="text-sm font-bold text-text-primary">${trade.exit_price}</p>
+                </div>
+              )}
+              {trade.lot_size && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Lot Büyüklüğü</p>
+                  <p className="text-sm font-bold text-text-primary">{trade.lot_size}</p>
+                </div>
               )}
             </div>
-            <p className="text-xs text-text-secondary">{getTimeAgo(trade.created_at)}</p>
-          </div>
-        </div>
-        <span className={`px-3 py-1 rounded text-xs font-bold border ${
-          trade.pnl >= 0 ? 'bg-brand-success/20 text-brand-success border-brand-success/30' : 'bg-brand-danger/20 text-brand-danger border-brand-danger/30'
-        }`}>
-          {trade.pnl >= 0 ? 'WIN' : 'LOSS'} (${Math.abs(trade.pnl).toFixed(2)})
-        </span>
-      </div>
-      
-      <p className="text-text-secondary text-sm whitespace-pre-line">
-        {trade.notes || `${trade.pair} paritesinde bir ${trade.direction} işlemi alındı.`}
-      </p>
-
-      <div className="bg-bg-surface-hover dark:bg-black/30 rounded-xl p-4 border border-border-primary flex flex-wrap gap-6">
-        <div>
-          <p className="text-xs text-text-secondary mb-1">Parite</p>
-          <p className="text-sm font-bold text-text-primary">{trade.pair}</p>
-        </div>
-        <div>
-          <p className="text-xs text-text-secondary mb-1">Yön</p>
-          <p className={`text-sm font-bold ${trade.direction === 'LONG' ? 'text-brand-success' : 'text-brand-danger'}`}>
-            {trade.direction}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-text-secondary mb-1">Strateji</p>
-          <p className="text-sm font-bold text-text-primary">{trade.strategy || 'Belirtilmedi'}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-6 pt-3 border-t border-border-primary mt-2">
-        <button 
-          onClick={handleLike}
-          className={`flex items-center space-x-2 transition-colors group ${isLiked ? 'text-brand-danger' : 'text-text-secondary hover:text-brand-danger'}`}
-        >
-          <Heart className={`w-4 h-4 ${isLiked ? 'fill-brand-danger' : 'group-hover:fill-brand-danger'}`} />
-          <span className="text-xs font-medium">{totalLikes > 0 ? totalLikes : 'Beğen'}</span>
-        </button>
-        <button 
-          onClick={() => setShowComments(!showComments)}
-          className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-brand-blue' : 'text-text-secondary hover:text-brand-blue'}`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span className="text-xs font-medium">{tradeComments.length > 0 ? tradeComments.length : 'Yorum'}</span>
-        </button>
-        <button 
-          onClick={handleShare}
-          className={`flex items-center space-x-2 transition-colors ml-auto ${isSharing ? 'text-brand-success' : 'text-text-secondary hover:text-text-primary'}`}
-        >
-          <Share2 className="w-4 h-4" />
-          {isSharing && <span className="text-xs text-brand-success ml-1">Kopyalandı!</span>}
-        </button>
-      </div>
-
-      {/* Comments Section */}
-      {showComments && (
-        <div className="mt-4 pt-4 border-t border-border-primary space-y-4 animate-fade-in">
-          {tradeComments.length > 0 ? (
-            <div className="space-y-3">
-              {tradeComments.map(comment => (
-                <div key={comment.id} className="bg-bg-surface-hover dark:bg-black/20 p-3 rounded-lg text-sm">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-text-primary text-xs">{comment.username}</span>
-                    <span className="text-[10px] text-text-secondary">{getTimeAgo(comment.createdAt)}</span>
-                  </div>
-                  <p className="text-text-secondary">{comment.text}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-text-secondary text-xs text-center italic opacity-70">Henüz yorum yapılmamış. İlk yorumu sen yap!</p>
           )}
-          
-          <form onSubmit={submitComment} className="flex gap-2">
-            <input 
-              type="text" 
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Yorum yaz..."
-              className="flex-1 bg-bg-primary border border-border-primary rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-brand-purple/50 outline-none"
-            />
-            <button 
-              type="submit"
-              disabled={!newComment.trim()}
-              className="px-3 py-2 bg-brand-purple hover:bg-brand-purple/80 text-white rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
         </div>
-      )}
+
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-5 pt-3 border-t border-border-primary ml-14">
+          <button 
+            onClick={handleLike}
+            className={`flex items-center space-x-2 transition-all group/btn ${isLiked ? 'text-brand-danger scale-105' : 'text-text-secondary hover:text-brand-danger'}`}
+          >
+            <Heart className={`w-[18px] h-[18px] transition-transform group-hover/btn:scale-110 ${isLiked ? 'fill-brand-danger' : ''}`} />
+            <span className="text-xs font-bold">{totalLikes > 0 ? totalLikes : 'Beğen'}</span>
+          </button>
+          <button 
+            onClick={() => setShowComments(!showComments)}
+            className={`flex items-center space-x-2 transition-all ${showComments ? 'text-brand-blue' : 'text-text-secondary hover:text-brand-blue'}`}
+          >
+            <MessageSquare className="w-[18px] h-[18px]" />
+            <span className="text-xs font-bold">{tradeComments.length > 0 ? `${tradeComments.length} Yorum` : 'Yorum'}</span>
+          </button>
+          <button 
+            onClick={handleShare}
+            className={`flex items-center space-x-2 transition-all ml-auto ${isSharing ? 'text-brand-success' : 'text-text-secondary hover:text-text-primary'}`}
+          >
+            <Share2 className="w-[18px] h-[18px]" />
+            <span className="text-xs font-bold">{isSharing ? 'Kopyalandı!' : 'Paylaş'}</span>
+          </button>
+        </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="ml-14 pt-4 border-t border-border-primary space-y-3 animate-fade-in">
+            {tradeComments.length > 0 ? (
+              <div className="space-y-2.5">
+                {tradeComments.map(comment => (
+                  <div key={comment.id} className="bg-bg-surface-hover dark:bg-black/20 p-3.5 rounded-xl text-sm border border-border-primary/50">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-text-primary text-xs">{comment.username}</span>
+                      <span className="text-[10px] text-text-secondary">{getTimeAgo(comment.createdAt)}</span>
+                    </div>
+                    <p className="text-text-secondary text-[13px] leading-relaxed">{comment.text}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-text-secondary text-xs text-center py-3 italic opacity-60">Henüz yorum yapılmamış. İlk yorumu sen yap!</p>
+            )}
+            
+            <form onSubmit={submitComment} className="flex gap-2">
+              <input 
+                type="text" 
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Yorum yaz..."
+                className="flex-1 bg-bg-primary dark:bg-black/30 border border-border-primary rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder-text-secondary focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/30 outline-none transition-all"
+              />
+              <button 
+                type="submit"
+                disabled={!newComment.trim()}
+                className="px-4 py-2.5 bg-brand-purple hover:bg-brand-purple/80 text-white rounded-xl transition-all disabled:opacity-30 shadow-[0_0_10px_rgba(139,92,246,0.2)] hover:shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
