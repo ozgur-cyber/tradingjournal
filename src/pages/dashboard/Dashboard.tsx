@@ -8,6 +8,7 @@ const Dashboard = () => {
   const { userData, user } = useAuthStore();
   const [chartData, setChartData] = useState<{name: string, pnl: number, tradePnl?: number}[]>([]);
   const [hasTrades, setHasTrades] = useState(true);
+  const [avgRR, setAvgRR] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -15,14 +16,21 @@ const Dashboard = () => {
     const fetchTrades = async () => {
       const { data } = await supabase
         .from('trades')
-        .select('pnl, created_at')
+        .select('pnl, created_at, risk_reward')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
         
       if (data && data.length > 0) {
         let currentPnl = 0;
+        let totalRR = 0;
+        let rrCount = 0;
+        
         const formattedData = data.map((trade, idx) => {
           currentPnl += Number(trade.pnl);
+          if (trade.risk_reward) {
+            totalRR += Number(trade.risk_reward);
+            rrCount++;
+          }
           
           let dateStr = '';
           try {
@@ -50,6 +58,7 @@ const Dashboard = () => {
           setChartData(formattedData);
         }
         setHasTrades(true);
+        setAvgRR(rrCount > 0 ? totalRR / rrCount : 0);
       } else {
         // Mock data for empty state to look beautiful under blur
         setChartData([
@@ -126,14 +135,14 @@ const Dashboard = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-text-secondary text-sm font-medium mb-1">Ortalama RR</p>
-              <h3 className="text-2xl font-bold text-text-primary">2.4</h3>
+              <h3 className="text-2xl font-bold text-text-primary">{avgRR > 0 ? avgRR.toFixed(2) : '0.00'}R</h3>
             </div>
-            <div className="p-2 bg-brand-success/20 rounded-lg text-brand-success">
+            <div className={`p-2 rounded-lg ${avgRR >= 1 ? 'bg-brand-success/20 text-brand-success' : 'bg-brand-warning/20 text-brand-warning'}`}>
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
           <p className="text-xs text-text-secondary mt-2 flex items-center">
-            Hedeflenen RR (Yakında)
+            Tüm işlemlerin ortalaması
           </p>
         </div>
       </div>
