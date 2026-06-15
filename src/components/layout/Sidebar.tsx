@@ -20,7 +20,7 @@ const Sidebar = () => {
   }
 
   return (
-    <aside className="hidden md:flex flex-col w-[280px] h-screen fixed left-0 top-0 bg-bg-surface dark:bg-bg-surface/40 backdrop-blur-md border-r border-border-primary p-6 transition-colors duration-300">
+    <aside className="hidden md:flex flex-col w-[260px] h-[calc(100vh-2rem)] fixed left-4 top-4 bg-bg-surface/60 dark:bg-[#131320]/70 backdrop-blur-xl border border-border-primary/50 dark:border-white/5 rounded-3xl p-6 transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] z-40">
       <div className="mb-10 flex items-center space-x-3">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.5)]">
           <Target className="w-5 h-5 text-white" />

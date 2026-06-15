@@ -6,7 +6,7 @@ import MobileNav from './MobileNav';
 
 const DashboardLayout = () => {
   return (
-    <div className="flex h-screen bg-bg-primary text-text-primary transition-colors duration-300">
+    <div className="flex h-screen text-text-primary transition-colors duration-300">
       {/* Desktop Sidebar */}
       <Sidebar />
 
@@ -15,7 +15,7 @@ const DashboardLayout = () => {
         <TopBar />
         
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 hide-scrollbar bg-bg-primary transition-colors duration-300">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 hide-scrollbar transition-colors duration-300">
           <Outlet />
         </main>
       </div>

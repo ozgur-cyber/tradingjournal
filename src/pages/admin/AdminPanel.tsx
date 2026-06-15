@@ -232,8 +232,8 @@ const AdminPanel = () => {
     <div className="space-y-8 animate-fade-in pb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-text-primary tracking-tight">Sistem Yönetimi</h2>
-          <p className="text-text-secondary text-sm mt-1">Platformdaki tüm kullanıcıları, yetkileri ve durumları yönetin.</p>
+          <h2 className="text-4xl font-black bg-gradient-to-r from-brand-purple via-[#a855f7] to-brand-blue bg-clip-text text-transparent tracking-tight mb-1">Sistem Yönetimi</h2>
+          <p className="text-text-secondary text-sm font-medium">Platformdaki tüm kullanıcıları, yetkileri ve durumları yönetin.</p>
         </div>
         <div className="flex items-center space-x-3">
           {userData?.role === 'Founder' && (
@@ -250,12 +250,12 @@ const AdminPanel = () => {
               Yeni Şifre Üret
             </button>
           )}
-          <div className="flex items-center space-x-2 bg-brand-danger/10 px-3 py-2 rounded-lg border border-brand-danger/20">
+          <div className="flex items-center space-x-2 bg-brand-danger/10 px-4 py-2.5 rounded-xl border border-brand-danger/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-danger opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-danger"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-danger shadow-[0_0_10px_rgba(239,68,68,0.8)]"></span>
             </span>
-            <span className="text-sm font-bold text-brand-danger">Admin Modu Aktif</span>
+            <span className="text-sm font-bold text-brand-danger uppercase tracking-wider">Admin Modu Aktif</span>
           </div>
         </div>
       </div>
