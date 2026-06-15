@@ -12,6 +12,7 @@ interface UserData {
   total_pnl: number;
   win_rate: number;
   created_at: string;
+  admin_passcode?: string;
 }
 
 interface AuthState {

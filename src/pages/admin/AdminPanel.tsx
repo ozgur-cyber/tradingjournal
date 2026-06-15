@@ -206,7 +206,7 @@ const AdminPanel = () => {
               onChange={(e) => setPasscodeInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  if (passcodeInput === adminPasscode || adminPasscode === '') setIsUnlocked(true);
+                  if (passcodeInput === userData?.admin_passcode || (userData?.admin_passcode && userData.admin_passcode.length === 0)) setIsUnlocked(true);
                   else alert("Hatalı Şifre!");
                 }
               }}
@@ -215,7 +215,7 @@ const AdminPanel = () => {
             />
             <button 
               onClick={() => {
-                if (passcodeInput === adminPasscode || adminPasscode === '') setIsUnlocked(true);
+                if (passcodeInput === userData?.admin_passcode || (userData?.admin_passcode && userData.admin_passcode.length === 0)) setIsUnlocked(true);
                 else alert("Hatalı Şifre!");
               }}
               className="w-full bg-brand-purple text-white py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] transition-all cursor-pointer hover:bg-brand-blue"
@@ -236,20 +236,7 @@ const AdminPanel = () => {
           <p className="text-text-secondary text-sm font-medium">Platformdaki tüm kullanıcıları, yetkileri ve durumları yönetin.</p>
         </div>
         <div className="flex items-center space-x-3">
-          {userData?.role === 'Founder' && (
-            <button 
-              onClick={async () => {
-                if(!confirm("Eski şifre iptal olacak. Yeni bir admin şifresi üretmek istediğinize emin misiniz?")) return;
-                const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                await supabase.from('platform_settings').upsert({ id: 1, admin_passcode: newCode });
-                setAdminPasscode(newCode);
-                alert(`Yeni Admin Şifresi: ${newCode}\n\n(Lütfen bunu not alın ve yetkililerle paylaşın)`);
-              }}
-              className="px-4 py-2 bg-brand-purple/10 text-brand-purple rounded-lg border border-brand-purple/30 hover:bg-brand-purple/20 text-sm font-semibold transition-colors"
-            >
-              Yeni Şifre Üret
-            </button>
-          )}
+          {/* Bireysel Şifre Sistemi Aktif */}
           <div className="flex items-center space-x-2 bg-brand-danger/10 px-4 py-2.5 rounded-xl border border-brand-danger/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-danger opacity-75"></span>
@@ -460,6 +447,26 @@ const AdminPanel = () => {
                                   >
                                     <UserX className="w-4 h-4 mr-1" />
                                     Yetkiyi Al
+                                  </button>
+                                )}
+                                
+                                {user.role === 'Admin' && (
+                                  <button
+                                    onClick={async () => {
+                                      if(!confirm(`${user.email} için yeni bir admin şifresi üretmek istediğinize emin misiniz?`)) return;
+                                      const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                                      try {
+                                        await supabase.from('users').update({ admin_passcode: newCode }).eq('id', user.id);
+                                        alert(`Yeni Admin Şifresi: ${newCode}\n\n(Lütfen bu şifreyi sadece ${user.email} ile paylaşın)`);
+                                        setUsers(users.map(u => u.id === user.id ? { ...u, admin_passcode: newCode } : u));
+                                      } catch (e) {
+                                        alert("Şifre üretilirken bir hata oluştu.");
+                                      }
+                                    }}
+                                    className="inline-flex items-center space-x-1 px-3 py-2 bg-brand-success/10 hover:bg-brand-success/20 text-brand-success border border-brand-success/30 rounded-lg text-xs font-semibold transition-colors"
+                                  >
+                                    <Lock className="w-4 h-4 mr-1" />
+                                    Şifre Üret
                                   </button>
                                 )}
                               </>
