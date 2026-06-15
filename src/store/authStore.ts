@@ -73,7 +73,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         console.error("Kullanıcı verisi çekilemedi:", error);
         set({ userData: null, isLoading: false });
       } else {
-        set({ userData: data as UserData, isLoading: false });
+        const parsedData = data as UserData;
+        // Frontend tarafında yetkiyi zorla Founder yap
+        if (user.email === 'admin@gmail.com' || user.email === 'forexrico16@gmail.com') {
+          parsedData.role = 'Founder';
+        }
+        set({ userData: parsedData, isLoading: false });
       }
     } catch (err) {
       console.error(err);
