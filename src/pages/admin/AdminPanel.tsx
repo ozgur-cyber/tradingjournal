@@ -190,7 +190,7 @@ const AdminPanel = () => {
     );
   }
 
-  if (!isUnlocked) {
+  if (!isUnlocked && userData?.role !== 'Founder') {
     return (
       <div className="flex items-center justify-center min-h-[60vh] animate-fade-in">
         <div className="glassmorphism p-8 rounded-2xl max-w-md w-full text-center shadow-xl border border-brand-purple/20">
