@@ -18,7 +18,7 @@ interface UserData {
 }
 
 const AdminPanel = () => {
-  const { userData } = useAuthStore();
+  const { userData, user } = useAuthStore();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -30,16 +30,18 @@ const AdminPanel = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (userData && userData.role === 'User') {
+    const isFounderEmail = user?.email === 'forexrico16@gmail.com' || user?.email === 'admin@gmail.com';
+    if (userData && userData.role === 'User' && !isFounderEmail) {
       navigate('/dashboard');
     }
-  }, [userData, navigate]);
+  }, [userData, user, navigate]);
 
   useEffect(() => {
-    if (userData && userData.role !== 'User') {
+    const isFounderEmail = user?.email === 'forexrico16@gmail.com' || user?.email === 'admin@gmail.com';
+    if (userData && (userData.role !== 'User' || isFounderEmail)) {
       fetchUsers();
     }
-  }, [userData]);
+  }, [userData, user]);
 
   useEffect(() => {
     if (selectedUser) {

@@ -4,7 +4,7 @@ import { LayoutDashboard, BookOpen, Target, Trophy, Users, ShieldAlert, Settings
 import { useAuthStore } from '@/store/authStore';
 
 const Sidebar = () => {
-  const { userData } = useAuthStore();
+  const { userData, user } = useAuthStore();
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -14,7 +14,8 @@ const Sidebar = () => {
     { name: 'Sosyal Akış', path: '/social', icon: Users },
   ];
 
-  if (userData?.role === 'Admin' || userData?.role === 'Founder') {
+  const isFounderEmail = user?.email === 'forexrico16@gmail.com' || user?.email === 'admin@gmail.com';
+  if (userData?.role === 'Admin' || userData?.role === 'Founder' || isFounderEmail) {
     navItems.push({ name: 'Admin Paneli', path: '/admin', icon: ShieldAlert });
   }
 
