@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/config';
 import { ShieldAlert, UserCog, UserX, Search, Filter, Users, ShieldCheck, Ban, CheckCircle, Eye, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 interface UserData {
   id: string;
@@ -26,10 +27,19 @@ const AdminPanel = () => {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [selectedUserTrades, setSelectedUserTrades] = useState<any[]>([]);
   const [loadingTrades, setLoadingTrades] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (userData && userData.role === 'User') {
+      navigate('/dashboard');
+    }
+  }, [userData, navigate]);
+
+  useEffect(() => {
+    if (userData && userData.role !== 'User') {
+      fetchUsers();
+    }
+  }, [userData]);
 
   useEffect(() => {
     if (selectedUser) {
