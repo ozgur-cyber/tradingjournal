@@ -1,17 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { supabase } from '@/lib/supabase/config';
-import { Shield, User, Palette, Lock, Activity, CheckCircle, AlertCircle } from 'lucide-react';
+import { Shield, User, Palette, Lock, Activity, CheckCircle, AlertCircle, Camera } from 'lucide-react';
 
 const Settings = () => {
-  const { userData, user } = useAuthStore();
+  const { userData, user, refreshUserData } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
   
   // Profile State
   const [username, setUsername] = useState(userData?.username || '');
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Max 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileMessage({ type: 'error', text: 'Dosya boyutu en fazla 2MB olmalıdır.' });
+      return;
+    }
+
+    setAvatarUploading(true);
+    setProfileMessage({ type: '', text: '' });
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+
+      // Save URL to user profile
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Refresh user data in store
+      await refreshUserData();
+      setProfileMessage({ type: 'success', text: 'Profil fotoğrafınız güncellendi!' });
+    } catch (err: any) {
+      setProfileMessage({ type: 'error', text: err.message || 'Fotoğraf yüklenemedi.' });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   // Security State
   const [password, setPassword] = useState('');
@@ -126,8 +177,32 @@ const Settings = () => {
               <h3 className="text-xl font-bold text-text-primary mb-6">Genel Profil Bilgileri</h3>
               
               <div className="flex items-center space-x-6 mb-8 p-6 bg-bg-surface-hover dark:bg-black/20 rounded-xl border border-border-primary">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-                  {userData?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                  {userData?.avatar_url ? (
+                    <img 
+                      src={userData.avatar_url} 
+                      alt="Avatar" 
+                      className="w-20 h-20 rounded-full object-cover shadow-lg ring-2 ring-brand-purple/30"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+                      {userData?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {avatarUploading ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleAvatarUpload}
+                    className="hidden" 
+                  />
                 </div>
                 <div>
                   <h4 className="text-lg font-bold text-text-primary">{userData?.username || 'İsimsiz Trader'}</h4>
@@ -139,6 +214,7 @@ const Settings = () => {
                   }`}>
                     {userData?.role || 'Kullanıcı'}
                   </span>
+                  <p className="text-xs text-text-secondary mt-1">Fotoğrafınızı değiştirmek için üzerine tıklayın</p>
                 </div>
               </div>
 

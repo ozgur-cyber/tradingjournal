@@ -13,6 +13,7 @@ interface UserData {
   win_rate: number;
   created_at: string;
   admin_passcode?: string;
+  avatar_url?: string;
 }
 
 interface AuthState {
