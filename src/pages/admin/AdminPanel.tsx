@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/config';
-import { ShieldAlert, UserCog, UserX, Search, Filter, Users, ShieldCheck, Ban, CheckCircle, Eye, X } from 'lucide-react';
+import { ShieldAlert, UserCog, UserX, Search, Filter, Users, ShieldCheck, Ban, CheckCircle, Eye, X, Lock } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
 
