@@ -36,15 +36,33 @@ const Leaderboard = () => {
         const userIds = data.map(u => u.id);
         const { data: tradesData } = await supabase
           .from('trades')
-          .select('user_id, risk_reward')
+          .select('user_id, risk_reward, image_url')
           .in('user_id', userIds);
 
         const usersWithRR = data.map(user => {
           const userTrades = tradesData?.filter(t => t.user_id === user.id) || [];
-          const totalRR = userTrades.reduce((sum, t) => sum + (Number(t.risk_reward) || 0), 0);
-          const avgRR = userTrades.length > 0 ? totalRR / userTrades.length : 0;
-          return { ...user, average_rr: avgRR };
-        });
+          // 10R+ ve fotoğrafsız işlemleri leaderboard hesaplamasından çıkar
+          const validTrades = userTrades.filter(t => {
+            const rr = Number(t.risk_reward) || 0;
+            if (rr >= 10 && !t.image_url) return false; // Fotoğrafsız 10R+ = geçersiz
+            return true;
+          });
+          const totalRR = validTrades.reduce((sum, t) => sum + (Number(t.risk_reward) || 0), 0);
+          const avgRR = validTrades.length > 0 ? totalRR / validTrades.length : 0;
+          
+          // 10R+ fotoğrafsız işlem varsa, o kullanıcının PnL'sini de düzelt
+          const invalidTrades = userTrades.filter(t => {
+            const rr = Number(t.risk_reward) || 0;
+            return rr >= 10 && !t.image_url;
+          });
+          const hasInvalidTrades = invalidTrades.length > 0;
+          
+          return { 
+            ...user, 
+            average_rr: avgRR,
+            has_invalid_trades: hasInvalidTrades
+          };
+        }).filter(u => !u.has_invalid_trades || u.average_rr > 0); // Tamamen geçersiz olanları çıkar
 
         setUsers(usersWithRR);
       } else {
