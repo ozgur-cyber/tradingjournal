@@ -6,7 +6,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const Dashboard = () => {
   const { userData, user } = useAuthStore();
-  const [chartData, setChartData] = useState<{x: number, y: number, isLast: boolean, val: number}[]>([]);
+  const [chartData, setChartData] = useState<{name: string, pnl: number, tradePnl?: number}[]>([]);
+  const [hasTrades, setHasTrades] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -48,11 +49,18 @@ const Dashboard = () => {
         } else {
           setChartData(formattedData);
         }
+        setHasTrades(true);
       } else {
+        // Mock data for empty state to look beautiful under blur
         setChartData([
-          { name: 'Ocak', pnl: 0 },
-          { name: 'Şubat', pnl: 0 }
+          { name: 'Pzt', pnl: 10 },
+          { name: 'Sal', pnl: 35 },
+          { name: 'Çar', pnl: 20 },
+          { name: 'Per', pnl: 65 },
+          { name: 'Cum', pnl: 50 },
+          { name: 'Cts', pnl: 95 }
         ]);
+        setHasTrades(false);
       }
     };
     
@@ -144,7 +152,18 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <div className="flex-1 w-full h-full min-h-[300px] p-6 pt-8">
+          <div className="flex-1 w-full h-full min-h-[300px] p-6 pt-8 relative">
+            {!hasTrades && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-bg-surface/60 backdrop-blur-[3px] rounded-b-2xl">
+                <div className="w-16 h-16 bg-brand-purple/20 rounded-full flex items-center justify-center mb-4 border border-brand-purple/30">
+                  <TrendingUp className="w-8 h-8 text-brand-purple" />
+                </div>
+                <h4 className="text-lg font-bold text-text-primary mb-2">Henüz İşlem Yok</h4>
+                <p className="text-text-secondary text-sm text-center max-w-xs">
+                  İlk işleminizi eklediğinizde kasa büyüme grafiğiniz burada şekillenecektir.
+                </p>
+              </div>
+            )}
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData as any} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -195,8 +214,8 @@ const Dashboard = () => {
                   strokeWidth={4}
                   fillOpacity={1} 
                   fill="url(#colorPnl)" 
-                  activeDot={{ r: 8, fill: "#8B5CF6", stroke: "var(--bg-surface)", strokeWidth: 3, style: { filter: 'drop-shadow(0px 0px 8px rgba(139,92,246,0.8))' } }}
-                  style={{ filter: 'url(#shadow)' }}
+                  activeDot={hasTrades ? { r: 8, fill: "#8B5CF6", stroke: "var(--bg-surface)", strokeWidth: 3, style: { filter: 'drop-shadow(0px 0px 8px rgba(139,92,246,0.8))' } } : false}
+                  style={hasTrades ? { filter: 'url(#shadow)' } : undefined}
                 />
               </AreaChart>
             </ResponsiveContainer>
