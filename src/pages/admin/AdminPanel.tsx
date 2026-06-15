@@ -15,6 +15,8 @@ interface UserData {
   total_pnl: number;
   win_rate: number;
   created_at: string;
+  banned_by?: string;
+  ban_reason?: string;
 }
 
 const AdminPanel = () => {
@@ -27,6 +29,14 @@ const AdminPanel = () => {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [selectedUserTrades, setSelectedUserTrades] = useState<any[]>([]);
   const [loadingTrades, setLoadingTrades] = useState(false);
+  
+  // Admin Passcode & Ban Modal States
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [adminPasscode, setAdminPasscode] = useState('');
+  const [banModalUser, setBanModalUser] = useState<{ id: string, name: string } | null>(null);
+  const [banReason, setBanReason] = useState('');
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,8 +50,16 @@ const AdminPanel = () => {
     const isFounderEmail = user?.email === 'forexrico16@gmail.com' || user?.email === 'admin@gmail.com';
     if (userData && (userData.role !== 'User' || isFounderEmail)) {
       fetchUsers();
+      fetchSettings();
     }
   }, [userData, user]);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase.from('platform_settings').select('admin_passcode').eq('id', 1).single();
+      if (!error && data) setAdminPasscode(data.admin_passcode || '');
+    } catch (error) {}
+  };
 
   useEffect(() => {
     if (selectedUser) {
@@ -108,21 +126,32 @@ const AdminPanel = () => {
     }
   };
 
-  const handleBanToggle = async (userId: string, currentStatus: boolean) => {
+  const handleBanToggle = async (userId: string, currentStatus: boolean, reason?: string) => {
     if (userData?.role !== 'Founder' && userData?.role !== 'Admin') return;
     
     const targetUser = users.find(u => u.id === userId);
     if (targetUser?.role === 'Founder') return;
 
+    if (!currentStatus && !reason) {
+      setBanModalUser({ id: userId, name: targetUser?.username || targetUser?.email || '' });
+      return;
+    }
+
     setUpdatingId(userId);
     try {
+      const updates = currentStatus 
+        ? { is_banned: false, ban_reason: null, banned_by: null }
+        : { is_banned: true, ban_reason: reason, banned_by: user?.email };
+
       const { error } = await supabase
         .from('users')
-        .update({ is_banned: !currentStatus })
+        .update(updates)
         .eq('id', userId);
 
       if (error) throw error;
-      setUsers(users.map(u => u.id === userId ? { ...u, is_banned: !currentStatus } : u));
+      setUsers(users.map(u => u.id === userId ? { ...u, ...updates } : u));
+      setBanModalUser(null);
+      setBanReason('');
     } catch (error) {
       console.error("Ban durumu güncellenirken hata:", error);
     } finally {
@@ -141,7 +170,7 @@ const AdminPanel = () => {
   const adminCount = users.filter(u => u.role === 'Admin' || u.role === 'Founder').length;
   const bannedCount = users.filter(u => u.is_banned).length;
 
-  if (userData?.role !== 'Admin' && userData?.role !== 'Founder') {
+  if (userData?.role !== 'Admin' && userData?.role !== 'Founder' && user?.email !== 'forexrico16@gmail.com') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center p-8 glassmorphism rounded-2xl max-w-md w-full">
@@ -149,7 +178,45 @@ const AdminPanel = () => {
             <ShieldAlert className="w-10 h-10 text-brand-danger" />
           </div>
           <h2 className="text-3xl font-bold text-text-primary mb-2">Erişim Engellendi</h2>
-          <p className="text-text-secondary">Bu sayfayı görüntülemek için "Founder" veya "Admin" yetkisine sahip olmalısınız.</p>
+          <p className="text-text-secondary">Bu sayfayı görüntülemek için yetkiye sahip olmalısınız.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isUnlocked) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="glassmorphism p-8 rounded-2xl max-w-md w-full text-center shadow-xl border border-brand-purple/20">
+          <div className="w-20 h-20 bg-brand-purple/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+            <Lock className="w-10 h-10 text-brand-purple" />
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-2">Yönetici Şifresi</h2>
+          <p className="text-text-secondary mb-8 text-sm">Admin paneline erişmek için güvenlik şifresini giriniz.</p>
+          <div className="space-y-4">
+            <input 
+              type="password" 
+              value={passcodeInput}
+              onChange={(e) => setPasscodeInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (passcodeInput === adminPasscode || adminPasscode === '') setIsUnlocked(true);
+                  else alert("Hatalı Şifre!");
+                }
+              }}
+              placeholder="Şifreniz..."
+              className="w-full bg-bg-surface-hover border border-border-primary rounded-xl py-3 px-4 text-center tracking-widest font-mono text-xl focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all text-text-primary"
+            />
+            <button 
+              onClick={() => {
+                if (passcodeInput === adminPasscode || adminPasscode === '') setIsUnlocked(true);
+                else alert("Hatalı Şifre!");
+              }}
+              className="w-full bg-brand-purple text-white py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] transition-all cursor-pointer hover:bg-brand-blue"
+            >
+              KİLİDİ AÇ
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -162,12 +229,28 @@ const AdminPanel = () => {
           <h2 className="text-3xl font-bold text-text-primary tracking-tight">Sistem Yönetimi</h2>
           <p className="text-text-secondary text-sm mt-1">Platformdaki tüm kullanıcıları, yetkileri ve durumları yönetin.</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-danger opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-danger"></span>
-          </span>
-          <span className="text-sm font-medium text-brand-danger">Admin Modu Aktif</span>
+        <div className="flex items-center space-x-3">
+          {userData?.role === 'Founder' && (
+            <button 
+              onClick={async () => {
+                if(!confirm("Eski şifre iptal olacak. Yeni bir admin şifresi üretmek istediğinize emin misiniz?")) return;
+                const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                await supabase.from('platform_settings').upsert({ id: 1, admin_passcode: newCode });
+                setAdminPasscode(newCode);
+                alert(`Yeni Admin Şifresi: ${newCode}\n\n(Lütfen bunu not alın ve yetkililerle paylaşın)`);
+              }}
+              className="px-4 py-2 bg-brand-purple/10 text-brand-purple rounded-lg border border-brand-purple/30 hover:bg-brand-purple/20 text-sm font-semibold transition-colors"
+            >
+              Yeni Şifre Üret
+            </button>
+          )}
+          <div className="flex items-center space-x-2 bg-brand-danger/10 px-3 py-2 rounded-lg border border-brand-danger/20">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-danger opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-danger"></span>
+            </span>
+            <span className="text-sm font-bold text-brand-danger">Admin Modu Aktif</span>
+          </div>
         </div>
       </div>
 
@@ -296,9 +379,17 @@ const AdminPanel = () => {
                             {user.role}
                           </span>
                           {user.is_banned && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-brand-danger/20 text-brand-danger">
-                              YASAKLI
-                            </span>
+                            <div className="mt-2 flex flex-col space-y-1.5">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-brand-danger/20 text-brand-danger w-fit">
+                                YASAKLI
+                              </span>
+                              {user.ban_reason && (
+                                <span className="text-[10px] text-text-secondary bg-bg-surface-hover px-2 py-1.5 rounded border border-border-primary block max-w-xs">
+                                  <span className="font-semibold block mb-0.5 opacity-70">Sebep:</span> 
+                                  {user.ban_reason}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>
@@ -388,6 +479,46 @@ const AdminPanel = () => {
           </div>
         )}
       </div>
+      {/* Ban Modal */}
+      {banModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-surface border border-border-primary rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-brand-danger/20 rounded-full flex items-center justify-center">
+                <Ban className="w-5 h-5 text-brand-danger" />
+              </div>
+              <h3 className="text-xl font-bold text-text-primary">Kullanıcıyı Yasakla</h3>
+            </div>
+            <p className="text-text-secondary text-sm mb-6"><span className="font-bold text-text-primary">{banModalUser.name}</span> adlı kullanıcıyı sistemden yasaklamak üzeresiniz. Lütfen geçerli bir sebep belirtin.</p>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-text-secondary mb-2">Yasaklama Sebebi (Zorunlu)</label>
+              <textarea 
+                value={banReason}
+                onChange={e => setBanReason(e.target.value)}
+                className="w-full bg-bg-surface-hover border border-border-primary rounded-xl p-3 focus:border-brand-danger focus:ring-1 focus:ring-brand-danger outline-none transition-all resize-none text-text-primary"
+                placeholder="Örn: Argo kullanım, hileli işlemler..."
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => { setBanModalUser(null); setBanReason(''); }}
+                className="px-4 py-2 border border-border-primary rounded-xl text-text-primary hover:bg-bg-surface-hover font-medium transition-colors"
+              >
+                İptal
+              </button>
+              <button 
+                disabled={!banReason.trim()}
+                onClick={() => handleBanToggle(banModalUser.id, false, banReason)}
+                className="px-4 py-2 bg-brand-danger text-white rounded-xl hover:bg-red-600 disabled:opacity-50 font-medium shadow-[0_0_15px_rgba(239,68,68,0.3)] transition-all"
+              >
+                Yasakla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Details Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
