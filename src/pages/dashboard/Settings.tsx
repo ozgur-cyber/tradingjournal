@@ -21,7 +21,6 @@ const Settings = () => {
 
   // Preferences State
   const { isDarkMode, toggleDarkMode } = useThemeStore();
-  const [emailNotif, setEmailNotif] = useState(true);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,21 +225,6 @@ const Settings = () => {
               <h3 className="text-xl font-bold text-text-primary mb-6">Uygulama Tercihleri</h3>
               
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-bg-surface-hover dark:bg-black/20 rounded-xl border border-border-primary">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-brand-purple/20 rounded-lg text-brand-purple">
-                      <Bell className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-text-primary font-bold">E-posta Bildirimleri</h4>
-                      <p className="text-sm text-text-secondary">Yeni özellikler ve özetler hakkında mail alın.</p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={emailNotif} onChange={() => setEmailNotif(!emailNotif)} />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-success"></div>
-                  </label>
-                </div>
 
                 <div className="flex items-center justify-between p-4 bg-bg-surface-hover dark:bg-black/20 rounded-xl border border-border-primary">
                   <div className="flex items-center space-x-4">
