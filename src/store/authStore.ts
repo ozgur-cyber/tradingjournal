@@ -14,6 +14,8 @@ interface UserData {
   created_at: string;
   admin_passcode?: string;
   avatar_url?: string;
+  warn_count?: number;
+  ban_until?: string;
 }
 
 interface AuthState {

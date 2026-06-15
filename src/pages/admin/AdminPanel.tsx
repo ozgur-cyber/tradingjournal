@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/config';
-import { ShieldAlert, UserCog, UserX, Search, Filter, Users, ShieldCheck, Ban, CheckCircle, Eye, X, Lock } from 'lucide-react';
+import { ShieldAlert, UserCog, UserX, Search, Filter, Users, ShieldCheck, Ban, CheckCircle, Eye, X, Lock, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +17,8 @@ interface UserData {
   created_at: string;
   banned_by?: string;
   ban_reason?: string;
+  warn_count?: number;
+  ban_until?: string;
 }
 
 const AdminPanel = () => {
@@ -160,6 +162,67 @@ const AdminPanel = () => {
       setBanReason('');
     } catch (error) {
       console.error("Ban durumu güncellenirken hata:", error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleWarn = async (userId: string) => {
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser || targetUser.role === 'Founder') return;
+
+    const reason = prompt(`${targetUser.username || targetUser.email} kullanıcısına uyarı vermek için sebep yazın:`);
+    if (!reason) return;
+
+    const currentWarns = (targetUser.warn_count || 0) + 1;
+    
+    // Escalating ban system
+    let banDays = 0;
+    let banMessage = '';
+    if (currentWarns >= 6) {
+      banDays = 180;
+      banMessage = `\n\n🚨 ${currentWarns}. uyarı! 180 GÜN BAN uygulandı.`;
+    } else if (currentWarns === 5) {
+      banDays = 60;
+      banMessage = `\n\n🚨 5. uyarı! 60 GÜN BAN uygulandı.`;
+    } else if (currentWarns === 4) {
+      banDays = 30;
+      banMessage = `\n\n🚨 4. uyarı! 30 GÜN BAN uygulandı.`;
+    } else if (currentWarns === 3) {
+      banDays = 7;
+      banMessage = `\n\n🚨 3. uyarı! 7 GÜN BAN uygulandı.`;
+    } else {
+      banMessage = `\n\nKalan hak: ${3 - currentWarns} uyarı sonra ban başlayacak.`;
+    }
+
+    if (!confirm(`${targetUser.username || targetUser.email} kullanıcısına ${currentWarns}. uyarı verilecek.${banMessage}\n\nOnaylıyor musunuz?`)) return;
+
+    setUpdatingId(userId);
+    try {
+      const updates: any = {
+        warn_count: currentWarns,
+      };
+
+      if (banDays > 0) {
+        const banUntil = new Date();
+        banUntil.setDate(banUntil.getDate() + banDays);
+        updates.ban_until = banUntil.toISOString();
+        updates.is_banned = true;
+        updates.ban_reason = `${currentWarns}. uyarı: ${reason} (${banDays} gün ban)`;
+        updates.banned_by = user?.email;
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', userId);
+
+      if (error) throw error;
+      setUsers(users.map(u => u.id === userId ? { ...u, ...updates } : u));
+      alert(`✅ Uyarı verildi! (${currentWarns}/3)${banMessage}`);
+    } catch (error) {
+      console.error("Uyarı verilirken hata:", error);
+      alert("Uyarı verilemedi.");
     } finally {
       setUpdatingId(null);
     }
@@ -425,6 +488,21 @@ const AdminPanel = () => {
                               title={user.is_banned ? 'Yasağı Kaldır' : 'Kullanıcıyı Yasakla'}
                             >
                               {user.is_banned ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                            </button>
+
+                            {/* Warn Button */}
+                            <button
+                              onClick={() => handleWarn(user.id)}
+                              disabled={updatingId === user.id}
+                              className="p-2 rounded-lg border bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20 transition-colors relative"
+                              title={`Uyarı Ver (Mevcut: ${user.warn_count || 0}/3)`}
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                              {(user.warn_count || 0) > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-yellow-500 text-black text-[9px] font-black rounded-full flex items-center justify-center">
+                                  {user.warn_count}
+                                </span>
+                              )}
                             </button>
 
                             {/* Role Toggle - Only Founder can do this */}

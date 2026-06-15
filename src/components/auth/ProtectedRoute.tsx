@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { Ban, LogOut } from 'lucide-react';
+import { Ban, LogOut, Clock, AlertTriangle } from 'lucide-react';
 
 export const ProtectedRoute = () => {
   const { user, userData, isLoading, signOut } = useAuthStore();
@@ -18,8 +18,23 @@ export const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Banlı kullanıcıyı engelle
-  if (userData?.is_banned) {
+  // Geçici ban kontrolü (ban_until varsa ve henüz süresi dolmamışsa)
+  const banUntil = (userData as any)?.ban_until ? new Date((userData as any).ban_until) : null;
+  const isTemporaryBanned = banUntil && banUntil > new Date();
+  
+  // Kalıcı ban veya geçici ban
+  if (userData?.is_banned || isTemporaryBanned) {
+    const getRemainingTime = () => {
+      if (!banUntil || !isTemporaryBanned) return null;
+      const diff = banUntil.getTime() - new Date().getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      if (days > 0) return `${days} gün ${hours} saat`;
+      return `${hours} saat`;
+    };
+
+    const remaining = getRemainingTime();
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
         <div className="glassmorphism p-10 rounded-3xl max-w-lg w-full text-center shadow-2xl border border-brand-danger/20 relative overflow-hidden">
@@ -37,10 +52,38 @@ export const ProtectedRoute = () => {
               Hesabınız platform kurallarını ihlal ettiği gerekçesiyle bir yönetici tarafından askıya alınmıştır.
             </p>
 
+            {/* Warn sayısı */}
+            {(userData as any)?.warn_count > 0 && (
+              <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 mb-4 text-left">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                  <p className="text-[10px] uppercase tracking-wider text-yellow-500 font-bold">Uyarı Geçmişi</p>
+                </div>
+                <p className="text-text-secondary text-sm">Toplam <span className="font-black text-yellow-500">{(userData as any).warn_count}</span> uyarı aldınız.</p>
+              </div>
+            )}
+
+            {/* Ban sebebi */}
             {(userData as any)?.ban_reason && (
-              <div className="bg-brand-danger/5 border border-brand-danger/20 rounded-xl p-4 mb-6 text-left">
+              <div className="bg-brand-danger/5 border border-brand-danger/20 rounded-xl p-4 mb-4 text-left">
                 <p className="text-[10px] uppercase tracking-wider text-brand-danger font-bold mb-1">Askıya Alma Sebebi</p>
                 <p className="text-text-secondary text-sm">{(userData as any).ban_reason}</p>
+              </div>
+            )}
+
+            {/* Kalan süre (geçici ban) */}
+            {remaining && (
+              <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4 text-brand-blue" />
+                  <p className="text-brand-blue text-sm font-bold">Kalan Süre: {remaining}</p>
+                </div>
+              </div>
+            )}
+
+            {!remaining && userData?.is_banned && (
+              <div className="bg-brand-danger/5 border border-brand-danger/20 rounded-xl p-4 mb-4">
+                <p className="text-brand-danger text-sm font-bold">Kalıcı Yasak</p>
               </div>
             )}
 
