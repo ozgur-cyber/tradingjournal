@@ -75,22 +75,25 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
 
       // Upload Image to Supabase Storage if selected
       if (image) {
-        const fileExt = image.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        try {
+          const fileExt = image.name.split('.').pop();
+          const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('trades')
-          .upload(fileName, image);
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('trades')
+            .upload(fileName, image);
 
-        if (uploadError) {
-          throw new Error("Resim yüklenemedi. 'trades' isimli public bir bucket oluşturduğunuzdan emin olun.");
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('trades')
+              .getPublicUrl(fileName);
+            finalImageUrl = publicUrl;
+          } else {
+            console.warn("Resim yüklenemedi, işlem resimsiz kaydedilecek:", uploadError.message);
+          }
+        } catch (imgErr) {
+          console.warn("Resim yükleme atlandı:", imgErr);
         }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('trades')
-          .getPublicUrl(fileName);
-
-        finalImageUrl = publicUrl;
       }
 
       const pnlValue = parseFloat(pnl);
