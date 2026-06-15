@@ -90,16 +90,22 @@ const AdminPanel = () => {
 
   const fetchUsers = async () => {
     try {
+      console.log("Fetching users...");
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Fetch Error:", error);
+        throw error;
+      }
+      console.log("Users fetched:", data);
       if (data) setUsers(data as UserData[]);
     } catch (error) {
       console.error("Kullanıcılar getirilirken hata:", error);
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   };
@@ -325,15 +331,9 @@ const AdminPanel = () => {
 
       {/* Users Table */}
       <div className="glassmorphism rounded-2xl overflow-hidden shadow-sm">
-        {loading ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-purple mb-4"></div>
-            <p className="text-gray-400 font-medium">Sistem verileri taranıyor...</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
                 <tr className="bg-bg-surface-hover dark:bg-black/40 border-b border-border-primary">
                   <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Kullanıcı Bilgisi</th>
                   <th className="p-5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Rol & Durum</th>
@@ -477,7 +477,6 @@ const AdminPanel = () => {
               </tbody>
             </table>
           </div>
-        )}
       </div>
       {/* Ban Modal */}
       {banModalUser && (
