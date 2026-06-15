@@ -57,6 +57,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
+    // Otomatik Founder yetkilendirmesi
+    if (user.email === 'admin@gmail.com' || user.email === 'forexrico16@gmail.com') {
+      await supabase.from('users').update({ role: 'Founder' }).eq('id', user.id);
+    }
+
     try {
       const { data, error } = await supabase
         .from('users')
