@@ -70,6 +70,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .single();
 
       if (error) {
+        // Eğer kayıt yoksa (PGRST116 hatası), otomatik oluştur
+        if (error.code === 'PGRST116') {
+          console.log("Kullanıcı profili bulunamadı, otomatik oluşturuluyor...");
+          const newRole = (user.email === 'admin@gmail.com' || user.email === 'forexrico16@gmail.com') ? 'Founder' : 'User';
+          
+          await supabase.from('users').insert([{
+            id: user.id,
+            email: user.email,
+            username: user.email.split('@')[0],
+            role: newRole
+          }]);
+          
+          // Yeni oluşturulan veriyi çek
+          const retry = await supabase.from('users').select('*').eq('id', user.id).single();
+          if (!retry.error && retry.data) {
+            set({ userData: retry.data as UserData, isLoading: false });
+            return;
+          }
+        }
+        
         console.error("Kullanıcı verisi çekilemedi:", error);
         set({ userData: null, isLoading: false });
       } else {
