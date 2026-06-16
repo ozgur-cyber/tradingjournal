@@ -173,48 +173,50 @@ const Dashboard = () => {
                 </p>
               </div>
             )}
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData as any} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" className="focus:outline-none" style={{ outline: 'none' }}>
+              <AreaChart data={chartData as any} margin={{ top: 20, right: 20, left: 0, bottom: 10 }} style={{ outline: 'none' }}>
                 <defs>
                   <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.6}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05}/>
+                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0}/>
                   </linearGradient>
                   <filter id="shadow" height="200%">
-                    <feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#8B5CF6" floodOpacity="0.3"/>
+                    <feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#8B5CF6" floodOpacity="0.4"/>
                   </filter>
                 </defs>
-                <CartesianGrid strokeDasharray="4 4" stroke="var(--border-primary)" vertical={false} opacity={0.6} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={true} horizontal={true} opacity={0.3} />
                 <XAxis 
                   dataKey="name" 
                   stroke="var(--text-secondary)" 
-                  fontSize={12} 
+                  fontSize={11} 
                   tickLine={false}
                   axisLine={false}
-                  padding={{ left: 20, right: 20 }}
                   dy={10}
+                  minTickGap={20}
                 />
                 <YAxis 
                   stroke="var(--text-secondary)" 
-                  fontSize={12}
+                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => `$${val}`}
-                  dx={-10}
+                  width={55}
+                  dx={-5}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'var(--bg-surface)', 
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)', 
                     borderColor: 'var(--border-primary)', 
-                    borderRadius: '16px', 
+                    borderRadius: '12px', 
                     color: 'var(--text-primary)',
-                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-                    padding: '12px 16px'
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                    padding: '12px 16px',
+                    backdropFilter: 'blur(8px)'
                   }}
                   itemStyle={{ color: '#8B5CF6', fontWeight: 'bold', fontSize: '16px' }}
-                  labelStyle={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  labelStyle={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                   formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Kasa']}
-                  cursor={{ stroke: 'var(--border-primary)', strokeWidth: 2, strokeDasharray: '4 4' }}
+                  cursor={{ stroke: 'rgba(139, 92, 246, 0.5)', strokeWidth: 2, strokeDasharray: '4 4' }}
                 />
                 <Area 
                   type="monotone" 
@@ -223,8 +225,8 @@ const Dashboard = () => {
                   strokeWidth={4}
                   fillOpacity={1} 
                   fill="url(#colorPnl)" 
-                  activeDot={hasTrades ? { r: 8, fill: "#8B5CF6", stroke: "var(--bg-surface)", strokeWidth: 3, style: { filter: 'drop-shadow(0px 0px 8px rgba(139,92,246,0.8))' } } : false}
-                  style={hasTrades ? { filter: 'url(#shadow)' } : undefined}
+                  activeDot={hasTrades ? { r: 6, fill: "#8B5CF6", stroke: "#1E1E2D", strokeWidth: 3, style: { outline: 'none', filter: 'drop-shadow(0px 0px 8px rgba(139,92,246,0.9))' } } : false}
+                  style={hasTrades ? { outline: 'none', filter: 'url(#shadow)' } : { outline: 'none' }}
                 />
               </AreaChart>
             </ResponsiveContainer>
