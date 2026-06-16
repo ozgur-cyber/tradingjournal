@@ -32,77 +32,124 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [availableMonths, setAvailableMonths] = useState<{value: string, label: string}[]>([]);
+
+  useEffect(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+      months.push({ value, label });
+    }
+    setAvailableMonths(months);
+  }, []);
+
   useEffect(() => {
     fetchLeaderboard();
-  }, []);
+  }, [selectedMonth]);
 
   const fetchLeaderboard = async () => {
     try {
+      setLoading(true);
       // Önce banlı/gizlenmiş kullanıcıları çek
       const { data: excData } = await supabase.from('leaderboard_exclusions').select('user_id');
       const excludedIds = excData?.map(e => e.user_id) || [];
 
-      // 1+ işlem yapanları çek ve PnL'ye göre sırala
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, username, total_pnl, win_rate, total_trades')
-        .gte('total_trades', 1)
-        .order('total_pnl', { ascending: false });
-
-      if (error) throw error;
+      let tradesQuery = supabase.from('trades').select('user_id, result, pnl, pair, created_at, risk_reward, image_url');
       
-      // Banlı olanları listeden çıkar ve ilk 20'yi al
-      const finalData = data?.filter(u => !excludedIds.includes(u.id)).slice(0, 20) || [];
-      
-      if (finalData.length > 0) {
-        const userIds = finalData.map(u => u.id);
-        const { data: tradesData } = await supabase
-          .from('trades')
-          .select('user_id, result, pnl, pair, created_at, risk_reward, image_url')
-          .in('user_id', userIds)
-          .order('created_at', { ascending: false });
-
-        const detailedUsers = finalData.map(user => {
-          const userTrades = tradesData?.filter(t => t.user_id === user.id) || [];
-          
-          const validTrades = userTrades.filter(t => t.image_url);
-          
-          const totalRR = validTrades.reduce((sum, t) => sum + (Number(t.risk_reward) || 0), 0);
-          const avgRR = validTrades.length > 0 ? totalRR / validTrades.length : 0;
-          
-          // İstatistikler
-          let topPair = '-';
-          if (validTrades.length > 0) {
-            const pairCounts = validTrades.reduce((acc: any, t) => {
-              acc[t.pair] = (acc[t.pair] || 0) + 1;
-              return acc;
-            }, {});
-            topPair = Object.keys(pairCounts).reduce((a, b) => pairCounts[a] > pairCounts[b] ? a : b);
-          }
-
-          const pnls = validTrades.map(t => Number(t.pnl) || 0);
-          const bestTrade = pnls.length > 0 ? Math.max(...pnls) : 0;
-          const worstTrade = pnls.length > 0 ? Math.min(...pnls) : 0;
-
-          const recentTrend = userTrades.slice(0, 5).map(t => t.result === 'WIN' ? 'W' : t.result === 'LOSS' ? 'L' : 'B').reverse() as ('W' | 'L' | 'B')[];
-
-          const hasInvalidTrades = userTrades.some(t => !t.image_url);
-
-          return { 
-            ...user, 
-            average_rr: avgRR,
-            top_pair: topPair,
-            best_trade: bestTrade,
-            worst_trade: worstTrade,
-            recent_trend: recentTrend,
-            has_invalid_trades: hasInvalidTrades
-          };
-        }).filter(u => !u.has_invalid_trades);
-
-        setUsers(detailedUsers);
-      } else {
-        setUsers([]);
+      if (selectedMonth !== 'all') {
+        const [year, month] = selectedMonth.split('-');
+        const startDate = new Date(Number(year), Number(month) - 1, 1).toISOString();
+        const endDate = new Date(Number(year), Number(month), 0, 23, 59, 59).toISOString();
+        tradesQuery = tradesQuery.gte('created_at', startDate).lte('created_at', endDate);
       }
+
+      const { data: tradesData, error: tradesError } = await tradesQuery;
+      if (tradesError) throw tradesError;
+
+      if (!tradesData || tradesData.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // İşlemleri user_id bazında grupla
+      const userTradesMap = new Map<string, any[]>();
+      tradesData.forEach(t => {
+        if (!userTradesMap.has(t.user_id)) userTradesMap.set(t.user_id, []);
+        userTradesMap.get(t.user_id)!.push(t);
+      });
+
+      const userIds = Array.from(userTradesMap.keys()).filter(id => !excludedIds.includes(id));
+      
+      if (userIds.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // Kullanıcı detaylarını çek
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username')
+        .in('id', userIds);
+        
+      if (usersError) throw usersError;
+
+      const detailedUsers = userIds.map(userId => {
+        const user = usersData?.find(u => u.id === userId);
+        const userTrades = userTradesMap.get(userId) || [];
+        
+        const hasInvalidTrades = userTrades.some(t => !t.image_url);
+        // Fotoğrafsız işlemi olanlar Leaderboard'a giremez
+        if (hasInvalidTrades) return null;
+
+        const validTrades = userTrades;
+        
+        const totalPnL = validTrades.reduce((sum, t) => sum + (Number(t.pnl) || 0), 0);
+        const totalTrades = validTrades.length;
+        const winTrades = validTrades.filter(t => t.pnl > 0).length;
+        const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+        
+        const totalRR = validTrades.reduce((sum, t) => sum + (Number(t.risk_reward) || 0), 0);
+        const avgRR = totalTrades > 0 ? totalRR / totalTrades : 0;
+        
+        // İstatistikler
+        let topPair = '-';
+        if (validTrades.length > 0) {
+          const pairCounts = validTrades.reduce((acc: any, t) => {
+            acc[t.pair] = (acc[t.pair] || 0) + 1;
+            return acc;
+          }, {});
+          topPair = Object.keys(pairCounts).reduce((a, b) => pairCounts[a] > pairCounts[b] ? a : b);
+        }
+
+        const pnls = validTrades.map(t => Number(t.pnl) || 0);
+        const bestTrade = pnls.length > 0 ? Math.max(...pnls) : 0;
+        const worstTrade = pnls.length > 0 ? Math.min(...pnls) : 0;
+
+        const recentTrend = userTrades.slice(0, 5).map(t => t.pnl > 0 ? 'W' : t.pnl < 0 ? 'L' : 'B').reverse() as ('W' | 'L' | 'B')[];
+
+        return { 
+          id: userId,
+          username: user?.username || 'Trader',
+          total_pnl: totalPnL,
+          win_rate: winRate,
+          total_trades: totalTrades,
+          average_rr: avgRR,
+          top_pair: topPair,
+          best_trade: bestTrade,
+          worst_trade: worstTrade,
+          recent_trend: recentTrend,
+          has_invalid_trades: false
+        } as LeaderboardUser;
+      }).filter(Boolean) as LeaderboardUser[];
+
+      // PnL'ye göre sırala
+      detailedUsers.sort((a, b) => b.total_pnl - a.total_pnl);
+      setUsers(detailedUsers.slice(0, 20));
+
     } catch (error) {
       console.error("Leaderboard verisi getirilirken hata:", error);
     } finally {
@@ -132,7 +179,23 @@ const Leaderboard = () => {
         <h2 className="text-4xl font-black bg-gradient-to-r from-yellow-500 via-amber-400 to-orange-500 bg-clip-text text-transparent mb-3 tracking-tight">
           Şampiyonlar Ligi
         </h2>
-        <p className="text-text-secondary text-lg">Platformun en kârlı ve istikrarlı trader'ları. Zirveye tırmanmak için tek 1 işlem bile yeterli!</p>
+        <p className="text-text-secondary text-lg mb-6">Platformun en kârlı ve istikrarlı trader'ları. Zirveye tırmanmak için tek 1 işlem bile yeterli!</p>
+        
+        <div className="flex items-center justify-center max-w-xs mx-auto">
+          <div className="relative w-full">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full appearance-none bg-bg-surface-hover border border-border-primary text-text-primary py-3 px-5 pr-10 rounded-xl focus:outline-none focus:border-brand-purple/50 transition-colors font-semibold"
+            >
+              <option value="all">Tüm Zamanlar</option>
+              {availableMonths.map(month => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary pointer-events-none" />
+          </div>
+        </div>
       </div>
 
       {loading ? (

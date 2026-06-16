@@ -16,7 +16,6 @@ const AdminLayout = () => {
     { name: 'Leaderboard', path: '/admin/leaderboard', icon: Trophy, roles: ['Founder', 'SuperAdmin', 'Moderator', 'Admin'] },
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, roles: ['Founder', 'SuperAdmin', 'Moderator', 'Admin'] },
     { name: 'Security', path: '/admin/security', icon: UserX, roles: ['Founder', 'SuperAdmin', 'Moderator', 'Admin'] },
-    { name: 'Seasons', path: '/admin/seasons', icon: CalendarDays, roles: ['Founder', 'SuperAdmin', 'SeasonAdmin', 'Admin'] },
     { name: 'Audit Logs', path: '/admin/audit', icon: History, roles: ['Founder', 'SuperAdmin', 'Moderator', 'Admin'] },
   ];
 

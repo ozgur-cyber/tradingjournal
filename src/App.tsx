@@ -22,7 +22,6 @@ import UserModeration from '@/pages/admin/UserModeration';
 import LeaderboardModeration from '@/pages/admin/LeaderboardModeration';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import SocialSecurity from '@/pages/admin/SocialSecurity';
-import SeasonManagement from '@/pages/admin/SeasonManagement';
 import AuditLogs from '@/pages/admin/AuditLogs';
 function App() {
   const { initializeAuth, user, isLoading } = useAuthStore();
@@ -75,7 +74,6 @@ function App() {
               <Route path="leaderboard" element={<LeaderboardModeration />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="security" element={<SocialSecurity />} />
-              <Route path="seasons" element={<SeasonManagement />} />
               <Route path="audit" element={<AuditLogs />} />
             </Route>
           </Route>

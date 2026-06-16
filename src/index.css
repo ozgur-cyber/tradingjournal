@@ -70,3 +70,17 @@
     background-size: 200% 200%;
   }
 }
+
+/* Recharts Focus Outline Fix */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-active-dot,
+.recharts-dot,
+.recharts-area,
+.recharts-layer {
+  outline: none !important;
+}
+
+*:focus {
+  outline: none;
+}
