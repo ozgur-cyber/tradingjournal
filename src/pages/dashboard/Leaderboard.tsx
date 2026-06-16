@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Medal, Crown, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Activity, Target, Flame } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
@@ -37,25 +37,31 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
+      // Önce banlı/gizlenmiş kullanıcıları çek
+      const { data: excData } = await supabase.from('leaderboard_exclusions').select('user_id');
+      const excludedIds = excData?.map(e => e.user_id) || [];
+
       // 1+ işlem yapanları çek ve PnL'ye göre sırala
       const { data, error } = await supabase
         .from('users')
         .select('id, username, total_pnl, win_rate, total_trades')
         .gte('total_trades', 1)
-        .order('total_pnl', { ascending: false })
-        .limit(20);
+        .order('total_pnl', { ascending: false });
 
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        const userIds = data.map(u => u.id);
+      // Banlı olanları listeden çıkar ve ilk 20'yi al
+      const finalData = data?.filter(u => !excludedIds.includes(u.id)).slice(0, 20) || [];
+      
+      if (finalData.length > 0) {
+        const userIds = finalData.map(u => u.id);
         const { data: tradesData } = await supabase
           .from('trades')
           .select('user_id, result, pnl, pair, created_at, risk_reward, image_url')
           .in('user_id', userIds)
           .order('created_at', { ascending: false });
 
-        const detailedUsers = data.map(user => {
+        const detailedUsers = finalData.map(user => {
           const userTrades = tradesData?.filter(t => t.user_id === user.id) || [];
           
           // 10R+ fotoğrafsız kontrolleri
