@@ -171,7 +171,7 @@ const Leaderboard = () => {
                     <p className={`text-2xl font-black ${top3[1].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
                       {top3[1].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[1].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[1].win_rate.toFixed(1)}</p>
+                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[1]?.win_rate?.toFixed(1)}</p>
                   </div>
                 </div>
               )}
@@ -197,7 +197,7 @@ const Leaderboard = () => {
                       {top3[0].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[0].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex justify-between items-center mt-2 px-2">
-                      <span className="text-xs text-text-secondary font-bold">WR: %{top3[0].win_rate.toFixed(1)}</span>
+                      <span className="text-xs text-text-secondary font-bold">WR: %{top3[0]?.win_rate?.toFixed(1)}</span>
                       <span className="text-xs text-text-secondary font-bold">{top3[0].total_trades} İşlem</span>
                     </div>
                   </div>
@@ -223,7 +223,7 @@ const Leaderboard = () => {
                     <p className={`text-xl font-black ${top3[2].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
                       {top3[2].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[2].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[2].win_rate.toFixed(1)}</p>
+                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[2]?.win_rate?.toFixed(1)}</p>
                   </div>
                 </div>
               )}
@@ -307,7 +307,7 @@ const Leaderboard = () => {
                             <td className="p-4 hidden md:table-cell">
                               <div className="flex flex-col gap-1 w-full max-w-[160px]">
                                 <div className="flex justify-between items-end">
-                                  <span className="text-xs font-bold text-text-primary">%{user.win_rate.toFixed(1)}</span>
+                                  <span className="text-xs font-bold text-text-primary">%{user?.win_rate?.toFixed(1)}</span>
                                 </div>
                                 <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
                                   <div 
