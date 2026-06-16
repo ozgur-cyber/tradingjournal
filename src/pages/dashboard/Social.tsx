@@ -41,7 +41,7 @@ const Social = () => {
           id, username, pair, direction, strategy, notes, pnl, created_at, entry_price, exit_price, lot_size,
           users (role, avatar_url)
         `)
-        .neq('is_public', false)
+
         .order('created_at', { ascending: false })
         .limit(30);
 
