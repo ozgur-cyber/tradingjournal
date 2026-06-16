@@ -179,14 +179,38 @@ const PublicProfile = () => {
                 )}
               </div>
               
-              <div className="mb-2">
-                <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
-                  {profile.username}
+              <div className="mb-2 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-text-primary truncate">
+                    {profile.username}
+                  </h1>
                   {profile.role === 'Founder' && (
-                    <span className="text-yellow-500 text-xs font-bold bg-yellow-500/10 px-2 py-1 rounded-full border border-yellow-500/20">Founder</span>
+                    <span className="text-yellow-500 text-[10px] sm:text-xs font-bold bg-yellow-500/10 px-2 py-1 rounded-full border border-yellow-500/20 shrink-0">Founder</span>
                   )}
-                </h1>
-                <p className="text-text-secondary text-sm mt-1">
+                  {profile.role === 'Admin' && (
+                    <span className="text-brand-danger text-[10px] sm:text-xs font-bold bg-brand-danger/10 px-2 py-1 rounded-full border border-brand-danger/20 shrink-0">Admin</span>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(profile.total_trades || 0) >= 50 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-blue/10 text-brand-blue border border-brand-blue/20 font-semibold">
+                      🚀 Deneyimli
+                    </span>
+                  )}
+                  {(profile.win_rate || 0) >= 60 && (profile.total_trades || 0) >= 10 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-success/10 text-brand-success border border-brand-success/20 font-semibold">
+                      🎯 Keskin Nişancı
+                    </span>
+                  )}
+                  {(profile.total_pnl || 0) > 1000 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 font-semibold">
+                      🏆 Kârlı Trader
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-text-secondary text-xs sm:text-sm">
                   Platforma katılım: {new Date(profile.created_at).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
                 </p>
                 <div className="flex items-center gap-4 mt-3">
