@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Search, LogOut, Settings, User } from 'lucide-react';
+import { Menu, Bell, Search, LogOut, Settings, User } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
 
-const TopBar = () => {
+const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   const { userData, signOut } = useAuthStore();
   const navigate = useNavigate();
   
@@ -34,7 +34,12 @@ const TopBar = () => {
   return (
     <header className="h-20 flex items-center justify-between px-6 lg:px-10 border-b border-border-primary bg-bg-surface/80 dark:bg-brand-ultra-dark/80 backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
       <div className="flex-1 flex items-center">
-        {/* Search Bar Removed as per request */}
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden p-2 -ml-2 mr-2 text-text-secondary hover:text-text-primary transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
       </div>
 
       <div className="flex items-center space-x-4">

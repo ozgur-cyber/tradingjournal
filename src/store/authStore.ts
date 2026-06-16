@@ -5,7 +5,7 @@ interface UserData {
   id: string;
   email: string;
   username: string;
-  role: 'User' | 'Admin' | 'Founder';
+  role: 'User' | 'SeasonAdmin' | 'Moderator' | 'SuperAdmin' | 'Admin' | 'Founder';
   is_banned: boolean;
   total_trades: number;
   win_trades: number;

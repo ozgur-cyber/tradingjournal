@@ -22,11 +22,11 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // PnL değeri 0'dan büyük olanları (kârda olanları) getir ve PnL'ye göre sırala
+      // En az 10 işlem yapan kullanıcıları getir ve PnL'ye göre sırala
       const { data, error } = await supabase
         .from('users')
         .select('id, username, total_pnl, win_rate, total_trades')
-        .gt('total_pnl', 0)
+        .gte('total_trades', 10)
         .order('total_pnl', { ascending: false })
         .limit(10);
 
@@ -80,7 +80,7 @@ const Leaderboard = () => {
       <div className="text-center max-w-2xl mx-auto mb-10">
         <Trophy className="w-16 h-16 mx-auto text-yellow-500 mb-4 drop-shadow-[0_0_15px_rgba(234,179,8,0.4)]" />
         <h2 className="text-4xl font-bold text-text-primary mb-3">En İyi Traderlar</h2>
-        <p className="text-text-secondary">Platformun en kârlı ve istikrarlı işlem yapan üyeleri. Sıralama sadece kârda olan kullanıcıları kapsar.</p>
+        <p className="text-text-secondary">Platformun en kârlı ve istikrarlı işlem yapan üyeleri. Sıralama en az 10 işlem yapan kullanıcıları kapsar.</p>
       </div>
 
       <div className="max-w-4xl mx-auto">
@@ -92,8 +92,8 @@ const Leaderboard = () => {
             </div>
           ) : users.length === 0 ? (
             <div className="p-12 text-center">
-              <p className="text-text-secondary text-lg">Henüz kârda olan bir kullanıcı bulunmuyor.</p>
-              <p className="text-text-secondary text-sm mt-2 opacity-70">İlk kârı elde edip liderlik koltuğuna oturabilirsiniz!</p>
+              <p className="text-text-secondary text-lg">Henüz sıralamaya girebilecek (10+ işlem yapan) bir kullanıcı bulunmuyor.</p>
+              <p className="text-text-secondary text-sm mt-2 opacity-70">İşlem yapmaya devam ederek liderlik koltuğuna oturabilirsiniz!</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

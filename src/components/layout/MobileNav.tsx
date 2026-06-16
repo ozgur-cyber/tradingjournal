@@ -1,34 +1,42 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Target, Trophy, Users } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, BookOpen, Plus, Trophy, User } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 const MobileNav = () => {
-  const navItems = [
-    { name: 'Dash', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'İşlemler', path: '/trades', icon: BookOpen },
-    { name: 'Strateji', path: '/strategies', icon: Target },
-    { name: 'Sıralama', path: '/leaderboard', icon: Trophy },
-    { name: 'Sosyal', path: '/social', icon: Users },
-  ];
+  const { userData } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-brand-surface/80 backdrop-blur-lg border-t border-white/5 z-50 px-2 flex justify-between items-center">
-      {navItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center w-full h-full space-y-1 transition-all ${
-              isActive
-                ? 'text-brand-purple'
-                : 'text-gray-500 hover:text-gray-300'
-            }`
-          }
-        >
-          <item.icon className="w-6 h-6" />
-          <span className="text-[10px] font-medium">{item.name}</span>
-        </NavLink>
-      ))}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-brand-surface/90 backdrop-blur-lg border-t border-white/5 z-50 px-2 flex justify-around items-center pb-safe">
+      <NavLink to="/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full space-y-1 transition-all ${isActive ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-300'}`}>
+        <LayoutDashboard className="w-6 h-6" />
+        <span className="text-[10px] font-medium">Dash</span>
+      </NavLink>
+
+      <NavLink to="/trades" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full space-y-1 transition-all ${isActive ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-300'}`}>
+        <BookOpen className="w-6 h-6" />
+        <span className="text-[10px] font-medium">İşlemler</span>
+      </NavLink>
+
+      <button 
+        onClick={() => navigate('/trades?add=true')}
+        className="flex flex-col items-center justify-center relative -top-5"
+      >
+        <div className="w-14 h-14 rounded-full bg-brand-purple flex items-center justify-center text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]">
+          <Plus className="w-7 h-7" />
+        </div>
+      </button>
+
+      <NavLink to="/leaderboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full space-y-1 transition-all ${isActive ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-300'}`}>
+        <Trophy className="w-6 h-6" />
+        <span className="text-[10px] font-medium">Sıralama</span>
+      </NavLink>
+
+      <NavLink to={userData?.username ? `/profile/${userData.username}` : '/settings'} className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full space-y-1 transition-all ${isActive ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-300'}`}>
+        <User className="w-6 h-6" />
+        <span className="text-[10px] font-medium">Profil</span>
+      </NavLink>
     </nav>
   );
 };

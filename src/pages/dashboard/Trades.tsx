@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, ArrowUpRight, ArrowDownRight, Trash2, Image as ImageIcon } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Plus, Filter, ArrowUpRight, ArrowDownRight, Trash2, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 import { useAuthStore } from '@/store/authStore';
 import AddTradeModal from '@/components/trades/AddTradeModal';
@@ -25,6 +26,15 @@ const Trades = () => {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('add') === 'true') {
+      setIsModalOpen(true);
+      setSearchParams({}); // Modalı açtıktan sonra query'i temizle
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (user) {
@@ -133,7 +143,7 @@ const Trades = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-bg-surface-hover dark:bg-black/40 border-b border-border-primary">
                   <th className="p-4 text-xs font-semibold text-text-secondary uppercase tracking-wider">Tarih</th>
@@ -173,11 +183,22 @@ const Trades = () => {
                       </td>
                       <td className="p-4">
                         {trade.image_url ? (
-                          <a href={trade.image_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-purple/10 text-brand-purple hover:bg-brand-purple/20 transition-colors" title="Görseli İncele">
-                            <ImageIcon className="w-4 h-4" />
-                          </a>
+                          <button 
+                            onClick={() => setSelectedImage(trade.image_url)} 
+                            className="inline-block relative group"
+                            title="Tam boyutta gör"
+                          >
+                            <img 
+                              src={trade.image_url} 
+                              alt="Trade Thumbnail" 
+                              className="w-10 h-10 object-cover rounded-lg border border-border-primary group-hover:border-brand-purple transition-all shadow-sm"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                              <ImageIcon className="w-4 h-4 text-white" />
+                            </div>
+                          </button>
                         ) : (
-                          <span className="text-text-secondary text-xs">-</span>
+                          <span className="text-text-secondary text-[10px] bg-bg-surface-hover px-2 py-1 rounded border border-border-primary">-</span>
                         )}
                       </td>
                       <td className="p-4 text-right">
@@ -206,6 +227,26 @@ const Trades = () => {
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedImage(null)}>
+          <div className="relative max-w-4xl w-full flex items-center justify-center">
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 bg-black/50 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img 
+              src={selectedImage} 
+              alt="Trade Screenshot" 
+              className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/10" 
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

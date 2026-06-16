@@ -13,9 +13,17 @@ import Strategies from '@/pages/dashboard/Strategies';
 import Leaderboard from '@/pages/dashboard/Leaderboard';
 import Social from '@/pages/dashboard/Social';
 import Settings from '@/pages/dashboard/Settings';
-import AdminPanel from '@/pages/admin/AdminPanel';
 import PublicProfile from '@/pages/dashboard/PublicProfile';
 
+// Admin imports
+import AdminLayout from '@/pages/admin/AdminLayout';
+import UserAnalytics from '@/pages/admin/UserAnalytics';
+import UserModeration from '@/pages/admin/UserModeration';
+import LeaderboardModeration from '@/pages/admin/LeaderboardModeration';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import SocialSecurity from '@/pages/admin/SocialSecurity';
+import SeasonManagement from '@/pages/admin/SeasonManagement';
+import AuditLogs from '@/pages/admin/AuditLogs';
 function App() {
   const { initializeAuth, user, isLoading } = useAuthStore();
   const { isDarkMode } = useThemeStore();
@@ -57,8 +65,19 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/social" element={<Social />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/admin" element={<AdminPanel />} />
             <Route path="/profile/:username" element={<PublicProfile />} />
+            
+            {/* Admin Nested Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="analytics" replace />} />
+              <Route path="analytics" element={<UserAnalytics />} />
+              <Route path="moderation" element={<UserModeration />} />
+              <Route path="leaderboard" element={<LeaderboardModeration />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="security" element={<SocialSecurity />} />
+              <Route path="seasons" element={<SeasonManagement />} />
+              <Route path="audit" element={<AuditLogs />} />
+            </Route>
           </Route>
         </Route>
       </Routes>

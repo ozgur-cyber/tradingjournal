@@ -159,7 +159,8 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
             strategy,
             notes,
             image_url: finalImageUrl,
-            result: isWin ? 'WIN' : isLoss ? 'LOSS' : 'BREAKEVEN'
+            result: isWin ? 'WIN' : isLoss ? 'LOSS' : 'BREAKEVEN',
+            is_public: true
           }
         ]);
 
