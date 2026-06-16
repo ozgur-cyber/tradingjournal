@@ -69,7 +69,7 @@ function App() {
             
             {/* Admin Nested Routes */}
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="analytics" replace />} />
+              <Route index element={<Navigate to="moderation" replace />} />
               <Route path="analytics" element={<UserAnalytics />} />
               <Route path="moderation" element={<UserModeration />} />
               <Route path="leaderboard" element={<LeaderboardModeration />} />
