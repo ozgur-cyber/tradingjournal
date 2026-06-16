@@ -81,7 +81,7 @@ const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
           {isProfileOpen && (
             <div className="absolute top-12 right-0 w-48 bg-bg-surface border border-border-primary rounded-xl shadow-2xl py-2 z-50 animate-fade-in">
               <button 
-                onClick={() => { navigate('/settings'); setIsProfileOpen(false); }}
+                onClick={() => { navigate(`/profile/${userData?.username}`); setIsProfileOpen(false); }}
                 className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-surface-hover dark:hover:bg-white/5 hover:text-text-primary flex items-center gap-2 transition-colors"
               >
                 <User className="w-4 h-4" /> Profilim
