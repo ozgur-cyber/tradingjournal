@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Outlet, NavLink, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { BarChart3, ShieldAlert, Trophy, LayoutDashboard, UserX, CalendarDays, History } from 'lucide-react';
@@ -31,7 +31,7 @@ const AdminLayout = () => {
                 key={tab.path}
                 to={tab.path}
                 className={({ isActive }) =>
-                  lex items-center space-x-3 px-3 py-2 rounded-lg transition-colors 
+                  `flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive ? 'bg-brand-purple/10 text-brand-purple' : 'text-text-secondary hover:bg-bg-surface-hover hover:text-text-primary'}`
                 }
               >
                 <tab.icon className="w-5 h-5" />
