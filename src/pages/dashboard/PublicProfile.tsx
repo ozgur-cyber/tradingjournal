@@ -258,7 +258,7 @@ const PublicProfile = () => {
             <p className="text-text-secondary font-medium">Win Rate</p>
             <div className="p-2 bg-brand-success/10 rounded-lg text-brand-success"><Target className="w-5 h-5" /></div>
           </div>
-          <h3 className="text-3xl font-bold text-brand-success">%{(profile.win_rate || 0).toFixed(1)}</h3>
+          <h3 className="text-3xl font-bold text-brand-success">{(profile.win_rate || 0).toFixed(1)}</h3>
         </div>
 
         <div className="glassmorphism p-6 rounded-2xl border border-border-primary relative overflow-hidden">

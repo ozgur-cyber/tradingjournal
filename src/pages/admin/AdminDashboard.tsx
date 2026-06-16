@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LayoutDashboard, Users, Activity, DollarSign, TrendingUp, TrendingDown, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
                     />
                   </svg>
                   <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-4xl font-black text-white">%{stats.winRate.toFixed(1)}</span>
+                    <span className="text-4xl font-black text-white">{stats.winRate.toFixed(1)}</span>
                     <span className="text-xs text-text-secondary mt-1">Win Rate</span>
                   </div>
                 </div>

@@ -461,7 +461,7 @@ const AdminPanel = () => {
                           </div>
                           <div>
                             <p className="text-xs text-text-secondary">Win Rate</p>
-                            <p className="font-semibold text-brand-success">%{(user.win_rate || 0).toFixed(1)}</p>
+                            <p className="font-semibold text-brand-success">{(user.win_rate || 0).toFixed(1)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-text-secondary">PnL</p>

@@ -305,11 +305,6 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
             }`}>
               {trade.pnl >= 0 ? '▲ WIN' : '▼ LOSS'} ${Math.abs(trade.pnl).toFixed(2)}
             </span>
-            {pnlPercent && (
-              <span className={`text-[10px] font-bold mt-1 ${Number(pnlPercent) >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
-                {Number(pnlPercent) >= 0 ? '+' : ''}{pnlPercent}%
-              </span>
-            )}
           </div>
         </div>
         

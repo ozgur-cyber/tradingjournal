@@ -32,14 +32,16 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
   const [availableMonths, setAvailableMonths] = useState<{value: string, label: string}[]>([]);
 
   useEffect(() => {
     const months = [];
-    const now = new Date();
+    const currentDate = new Date();
+    const startDate = new Date(2026, 5, 1);
     for (let i = 0; i < 12; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      if (d < startDate) break;
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const label = d.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
       months.push({ value, label });
@@ -137,7 +139,7 @@ const Leaderboard = () => {
           total_pnl: totalPnL,
           win_rate: winRate,
           total_trades: totalTrades,
-          average_rr: avgRR,
+          average_rr: totalRR,
           top_pair: topPair,
           best_trade: bestTrade,
           worst_trade: worstTrade,
@@ -186,11 +188,12 @@ const Leaderboard = () => {
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full appearance-none bg-bg-surface-hover border border-border-primary text-text-primary py-3 px-5 pr-10 rounded-xl focus:outline-none focus:border-brand-purple/50 transition-colors font-semibold"
+              className="w-full appearance-none bg-bg-surface border border-border-primary rounded-xl py-3 pl-4 pr-10 text-white font-bold focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm transition-all cursor-pointer"
             >
-              <option value="all">Tüm Zamanlar</option>
-              {availableMonths.map(month => (
-                <option key={month.value} value={month.value}>{month.label}</option>
+              {availableMonths.map((month) => (
+                <option key={month.value} value={month.value} className="bg-[#1E1E2D] text-white py-2">
+                  {month.label}
+                </option>
               ))}
             </select>
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary pointer-events-none" />
@@ -234,7 +237,7 @@ const Leaderboard = () => {
                     <p className={`text-2xl font-black ${top3[1].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
                       {top3[1].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[1].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[1]?.win_rate?.toFixed(1)}</p>
+                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: {top3[1]?.win_rate?.toFixed(1)}</p>
                   </div>
                 </div>
               )}
@@ -260,7 +263,7 @@ const Leaderboard = () => {
                       {top3[0].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[0].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex justify-between items-center mt-2 px-2">
-                      <span className="text-xs text-text-secondary font-bold">WR: %{top3[0]?.win_rate?.toFixed(1)}</span>
+                      <span className="text-xs text-text-secondary font-bold">WR: {top3[0]?.win_rate?.toFixed(1)}</span>
                       <span className="text-xs text-text-secondary font-bold">{top3[0].total_trades} İşlem</span>
                     </div>
                   </div>
@@ -286,7 +289,7 @@ const Leaderboard = () => {
                     <p className={`text-xl font-black ${top3[2].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
                       {top3[2].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[2].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[2]?.win_rate?.toFixed(1)}</p>
+                    <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: {top3[2]?.win_rate?.toFixed(1)}</p>
                   </div>
                 </div>
               )}
@@ -370,7 +373,7 @@ const Leaderboard = () => {
                             <td className="p-4 hidden md:table-cell">
                               <div className="flex flex-col gap-1 w-full max-w-[160px]">
                                 <div className="flex justify-between items-end">
-                                  <span className="text-xs font-bold text-text-primary">%{user?.win_rate?.toFixed(1)}</span>
+                                  <span className="text-xs font-bold text-text-primary">{user?.win_rate?.toFixed(1)}</span>
                                 </div>
                                 <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
                                   <div 
@@ -382,7 +385,7 @@ const Leaderboard = () => {
                             </td>
                             <td className="p-4 text-center hidden sm:table-cell">
                               <span className="inline-flex items-center px-2 py-1 bg-brand-blue/10 text-brand-blue border border-brand-blue/20 rounded-md text-xs font-bold">
-                                {user.average_rr ? user.average_rr.toFixed(2) : '0.00'}R
+                                {user.average_rr ? (user.average_rr > 0 ? '+' : '') + user.average_rr.toFixed(2) : '0.00'}R
                               </span>
                             </td>
                             <td className="p-4 text-right">

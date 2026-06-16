@@ -9,21 +9,39 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState<{name: string, pnl: number, tradePnl?: number}[]>([]);
   const [hasTrades, setHasTrades] = useState(true);
   const [avgRR, setAvgRR] = useState(0);
+  const [timeFilter, setTimeFilter] = useState<'all' | 'month' | 'week'>('all');
+  const [filteredStats, setFilteredStats] = useState({ pnl: 0, winRate: 0, trades: 0, wins: 0 });
 
   useEffect(() => {
     if (!user) return;
     
     const fetchTrades = async () => {
-      const { data } = await supabase
+      let query = supabase
         .from('trades')
         .select('pnl, created_at, risk_reward')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
         
+      if (timeFilter === 'month') {
+        const firstDay = new Date();
+        firstDay.setDate(1);
+        firstDay.setHours(0,0,0,0);
+        query = query.gte('created_at', firstDay.toISOString());
+      } else if (timeFilter === 'week') {
+        const firstDay = new Date();
+        const day = firstDay.getDay() || 7;
+        firstDay.setDate(firstDay.getDate() - day + 1);
+        firstDay.setHours(0,0,0,0);
+        query = query.gte('created_at', firstDay.toISOString());
+      }
+
+      const { data } = await query;
+        
       if (data && data.length > 0) {
         let currentPnl = 0;
         let totalRR = 0;
         let rrCount = 0;
+        let winCount = 0;
         
         const formattedData = data.map((trade, idx) => {
           currentPnl += Number(trade.pnl);
@@ -31,6 +49,7 @@ const Dashboard = () => {
             totalRR += Number(trade.risk_reward);
             rrCount++;
           }
+          if (Number(trade.pnl) > 0) winCount++;
           
           let dateStr = '';
           try {
@@ -58,7 +77,8 @@ const Dashboard = () => {
           setChartData(formattedData);
         }
         setHasTrades(true);
-        setAvgRR(rrCount > 0 ? totalRR / rrCount : 0);
+        setAvgRR(totalRR);
+        setFilteredStats({ pnl: currentPnl, winRate: (winCount / data.length) * 100, trades: data.length, wins: winCount });
       } else {
         // Mock data for empty state to look beautiful under blur
         setChartData([
@@ -70,26 +90,45 @@ const Dashboard = () => {
           { name: 'Cts', pnl: 95 }
         ]);
         setHasTrades(false);
+        setAvgRR(0);
+        setFilteredStats({ pnl: 0, winRate: 0, trades: 0, wins: 0 });
       }
     };
     
     fetchTrades();
-  }, [user]);
+  }, [user, timeFilter]);
 
-  const totalPnL = userData?.total_pnl || 0;
-  const winRate = userData?.win_rate || 0;
-  const totalTrades = userData?.total_trades || 0;
+  const totalPnL = timeFilter === 'all' ? (userData?.total_pnl || 0) : filteredStats.pnl;
+  const winRate = timeFilter === 'all' ? (userData?.win_rate || 0) : filteredStats.winRate;
+  const totalTrades = timeFilter === 'all' ? (userData?.total_trades || 0) : filteredStats.trades;
+  const winTrades = timeFilter === 'all' ? (userData?.win_trades || 0) : filteredStats.wins;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-text-primary">Genel Bakış</h2>
           <p className="text-text-secondary text-sm mt-1">Platformdaki güncel performans metrikleriniz.</p>
         </div>
-        <div className="flex items-center space-x-2 bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg border border-brand-success/20">
-          <span className="w-2 h-2 rounded-full bg-brand-success animate-pulse"></span>
-          <span className="text-xs font-bold">Sezon 1 Aktif</span>
+        <div className="flex bg-bg-surface-hover rounded-xl p-1 border border-border-primary">
+          <button 
+            onClick={() => setTimeFilter('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeFilter === 'all' ? 'bg-brand-purple text-white shadow-lg' : 'text-text-secondary hover:text-white'}`}
+          >
+            Tüm Zamanlar
+          </button>
+          <button 
+            onClick={() => setTimeFilter('month')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeFilter === 'month' ? 'bg-brand-purple text-white shadow-lg' : 'text-text-secondary hover:text-white'}`}
+          >
+            Bu Ay
+          </button>
+          <button 
+            onClick={() => setTimeFilter('week')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeFilter === 'week' ? 'bg-brand-purple text-white shadow-lg' : 'text-text-secondary hover:text-white'}`}
+          >
+            Bu Hafta
+          </button>
         </div>
       </div>
 
@@ -118,7 +157,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-text-secondary text-sm font-medium mb-1">Kazanma Oranı (Win Rate)</p>
-              <h3 className="text-2xl font-bold text-text-primary">%{winRate.toFixed(1)}</h3>
+              <h3 className="text-2xl font-bold text-text-primary">{winRate.toFixed(1)}</h3>
             </div>
             <div className="p-2 bg-brand-blue/20 rounded-lg text-brand-blue">
               <Target className="w-5 h-5" />
@@ -126,7 +165,7 @@ const Dashboard = () => {
           </div>
           <p className="text-xs text-brand-success mt-2 flex items-center">
             <TrendingUp className="w-3 h-3 mr-1" />
-            {(userData?.win_trades || 0)} Başarılı İşlem
+            {winTrades} Başarılı İşlem
           </p>
         </div>
 
@@ -134,8 +173,8 @@ const Dashboard = () => {
         <div className="glassmorphism p-5 rounded-2xl relative overflow-hidden group">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-text-secondary text-sm font-medium mb-1">Ortalama RR</p>
-              <h3 className="text-2xl font-bold text-text-primary">{avgRR > 0 ? avgRR.toFixed(2) : '0.00'}R</h3>
+              <p className="text-text-secondary text-sm font-medium mb-1">Toplam RR</p>
+              <h3 className="text-2xl font-bold text-text-primary">{avgRR > 0 ? '+' : ''}{avgRR.toFixed(2)}R</h3>
             </div>
             <div className={`p-2 rounded-lg ${avgRR >= 1 ? 'bg-brand-success/20 text-brand-success' : 'bg-brand-warning/20 text-brand-warning'}`}>
               <TrendingUp className="w-5 h-5" />

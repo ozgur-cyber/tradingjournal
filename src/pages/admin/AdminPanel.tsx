@@ -451,7 +451,7 @@ const AdminPanel = () => {
                           </div>
                           <div>
                             <p className="text-xs text-text-secondary">Win Rate</p>
-                            <p className="font-semibold text-brand-success">%{(user.win_rate || 0).toFixed(1)}</p>
+                            <p className="font-semibold text-brand-success">{(user.win_rate || 0).toFixed(1)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-text-secondary">PnL</p>
@@ -464,7 +464,7 @@ const AdminPanel = () => {
                         </div>
                       </td>
                       <td className="p-5 text-right">
-                        <div className="flex items-center justify-end space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end space-x-2">
                           {/* View Details Button */}
                           <button
                             onClick={() => setSelectedUser(user)}
@@ -474,87 +474,90 @@ const AdminPanel = () => {
                             <Eye className="w-4 h-4" />
                           </button>
                           
-                          {user.role !== 'Founder' && (
-                            <>
-                              {/* Ban / Unban Toggle */}
-                            <button
-                              onClick={() => handleBanToggle(user.id, user.is_banned)}
-                              disabled={updatingId === user.id}
-                              className={`p-2 rounded-lg border transition-colors ${
-                                user.is_banned 
+                          {/* Ban / Unban Toggle */}
+                          <button
+                            onClick={() => handleBanToggle(user.id, user.is_banned)}
+                            disabled={updatingId === user.id || user.role === 'Founder'}
+                            className={`p-2 rounded-lg border transition-colors ${
+                              user.role === 'Founder' 
+                                ? 'opacity-30 cursor-not-allowed bg-gray-500/10 border-gray-500/30 text-gray-500'
+                                : user.is_banned 
                                   ? 'bg-brand-success/10 border-brand-success/30 text-brand-success hover:bg-brand-success/20' 
                                   : 'bg-brand-danger/10 border-brand-danger/30 text-brand-danger hover:bg-brand-danger/20'
-                              }`}
-                              title={user.is_banned ? 'Yasağı Kaldır' : 'Kullanıcıyı Yasakla'}
-                            >
-                              {user.is_banned ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                            </button>
+                            }`}
+                            title={user.is_banned ? 'Yasağı Kaldır' : 'Kullanıcıyı Yasakla'}
+                          >
+                            {user.is_banned ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                          </button>
 
-                            {/* Warn Button */}
-                            <button
-                              onClick={() => handleWarn(user.id)}
-                              disabled={updatingId === user.id}
-                              className="p-2 rounded-lg border bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20 transition-colors relative"
-                              title={`Uyarı Ver (Mevcut: ${user.warn_count || 0}/3)`}
-                            >
-                              <AlertTriangle className="w-4 h-4" />
-                              {(user.warn_count || 0) > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-yellow-500 text-black text-[9px] font-black rounded-full flex items-center justify-center">
-                                  {user.warn_count}
-                                </span>
+                          {/* Warn Button */}
+                          <button
+                            onClick={() => handleWarn(user.id)}
+                            disabled={updatingId === user.id || user.role === 'Founder'}
+                            className={`p-2 rounded-lg border transition-colors relative ${
+                              user.role === 'Founder'
+                                ? 'opacity-30 cursor-not-allowed bg-gray-500/10 border-gray-500/30 text-gray-500'
+                                : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20'
+                            }`}
+                            title={`Uyarı Ver (Mevcut: ${user.warn_count || 0}/3)`}
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                            {(user.warn_count || 0) > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-yellow-500 text-black text-[9px] font-black rounded-full flex items-center justify-center">
+                                {user.warn_count}
+                              </span>
+                            )}
+                          </button>
+
+                          {/* Role Toggle - Only Founder can do this */}
+                          {userData?.role === 'Founder' && (
+                            <>
+                              {user.role === 'User' ? (
+                                <button
+                                  onClick={() => handleRoleChange(user.id, 'Admin')}
+                                  disabled={updatingId === user.id}
+                                  className="inline-flex items-center space-x-1 px-3 py-2 bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple border border-brand-purple/30 rounded-lg text-xs font-semibold transition-colors"
+                                >
+                                  <UserCog className="w-4 h-4 mr-1" />
+                                  Admin Yap
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleRoleChange(user.id, 'User')}
+                                  disabled={updatingId === user.id || user.role === 'Founder'}
+                                  className={`inline-flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                                    user.role === 'Founder'
+                                      ? 'opacity-30 cursor-not-allowed bg-gray-500/10 border-gray-500/30 text-gray-400'
+                                      : 'bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                                  }`}
+                                >
+                                  <UserX className="w-4 h-4 mr-1" />
+                                  Yetkiyi Al
+                                </button>
                               )}
-                            </button>
-
-                            {/* Role Toggle - Only Founder can do this */}
-                            {userData?.role === 'Founder' && (
-                              <>
-                                {user.role === 'User' ? (
-                                  <button
-                                    onClick={() => handleRoleChange(user.id, 'Admin')}
-                                    disabled={updatingId === user.id}
-                                    className="inline-flex items-center space-x-1 px-3 py-2 bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple border border-brand-purple/30 rounded-lg text-xs font-semibold transition-colors"
-                                  >
-                                    <UserCog className="w-4 h-4 mr-1" />
-                                    Admin Yap
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handleRoleChange(user.id, 'User')}
-                                    disabled={updatingId === user.id}
-                                    className="inline-flex items-center space-x-1 px-3 py-2 bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 border border-gray-500/30 rounded-lg text-xs font-semibold transition-colors"
-                                  >
-                                    <UserX className="w-4 h-4 mr-1" />
-                                    Yetkiyi Al
-                                  </button>
-                                )}
-                                
-                                {user.role === 'Admin' && (
-                                  <button
-                                    onClick={async () => {
-                                      if(!confirm(`${user.email} için yeni bir admin şifresi üretmek istediğinize emin misiniz?`)) return;
-                                      const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                                      try {
-                                        await supabase.from('users').update({ admin_passcode: newCode }).eq('id', user.id);
-                                        alert(`Yeni Admin Şifresi: ${newCode}\n\n(Lütfen bu şifreyi sadece ${user.email} ile paylaşın)`);
-                                        setUsers(users.map(u => u.id === user.id ? { ...u, admin_passcode: newCode } : u));
-                                      } catch (e) {
-                                        alert("Şifre üretilirken bir hata oluştu.");
-                                      }
-                                    }}
-                                    className="inline-flex items-center space-x-1 px-3 py-2 bg-brand-success/10 hover:bg-brand-success/20 text-brand-success border border-brand-success/30 rounded-lg text-xs font-semibold transition-colors"
-                                  >
-                                    <Lock className="w-4 h-4 mr-1" />
-                                    Şifre Üret
-                                  </button>
-                                )}
-                              </>
+                              
+                              {user.role === 'Admin' && (
+                                <button
+                                  onClick={async () => {
+                                    if(!confirm(`${user.email} için yeni bir admin şifresi üretmek istediğinize emin misiniz?`)) return;
+                                    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                                    try {
+                                      await supabase.from('users').update({ admin_passcode: newCode }).eq('id', user.id);
+                                      alert(`Yeni Admin Şifresi: ${newCode}\n\n(Lütfen bu şifreyi sadece ${user.email} ile paylaşın)`);
+                                      setUsers(users.map(u => u.id === user.id ? { ...u, admin_passcode: newCode } : u));
+                                    } catch (e) {
+                                      alert("Şifre üretilirken bir hata oluştu.");
+                                    }
+                                  }}
+                                  className="inline-flex items-center space-x-1 px-3 py-2 bg-brand-success/10 hover:bg-brand-success/20 text-brand-success border border-brand-success/30 rounded-lg text-xs font-semibold transition-colors"
+                                >
+                                  <Lock className="w-4 h-4 mr-1" />
+                                  Şifre Üret
+                                </button>
                               )}
                             </>
                           )}
                         </div>
-                        {user.role === 'Founder' && (
-                          <span className="text-xs text-yellow-500/50 font-medium italic">Değiştirilemez</span>
-                        )}
                       </td>
                     </tr>
                   ))

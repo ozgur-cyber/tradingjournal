@@ -65,7 +65,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean, onClose?: () => void }
               <Target className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-purple to-brand-blue bg-clip-text text-transparent tracking-tight">
-              NovaTrade
+              NovaTrades
             </h1>
           </div>
           {/* Close button for mobile */}

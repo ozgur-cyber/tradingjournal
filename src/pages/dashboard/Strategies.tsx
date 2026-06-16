@@ -222,7 +222,7 @@ const Strategies = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-400">Kazanma Oranı</span>
-                      <span className="text-white font-bold">%{stat.winRate.toFixed(1)}</span>
+                      <span className="text-white font-bold">{stat.winRate.toFixed(1)}</span>
                     </div>
                     <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden">
                       <div 

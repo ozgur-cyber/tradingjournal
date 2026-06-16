@@ -83,7 +83,7 @@ const UserAnalytics = () => {
             </div>
             <div>
               <p className="text-[10px] text-text-secondary uppercase">Win Rate</p>
-              <p className="font-bold text-white text-lg">%{(topPnL?.win_rate || 0).toFixed(1)}</p>
+              <p className="font-bold text-white text-lg">{(topPnL?.win_rate || 0).toFixed(1)}</p>
             </div>
           </div>
           <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-brand-success/5 blur-3xl rounded-full pointer-events-none"></div>
