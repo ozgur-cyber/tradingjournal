@@ -16,7 +16,8 @@ interface SocialTrade {
   entry_price?: number;
   exit_price?: number;
   lot_size?: number;
-  users: {
+  image_url?: string;
+  users?: {
     role: string;
     avatar_url?: string;
   };
@@ -35,19 +36,33 @@ const Social = () => {
 
   const fetchFeed = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      const { data: tradesData, error: tradesError } = await supabase
         .from('trades')
-        .select(`
-          id, username, pair, direction, strategy, notes, pnl, created_at, entry_price, exit_price, lot_size,
-          users (role, avatar_url)
-        `)
-
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(30);
 
-      if (error) throw error;
-      if (data) {
-        setTrades(data as unknown as SocialTrade[]);
+      if (tradesError) throw tradesError;
+      
+      if (tradesData && tradesData.length > 0) {
+        const userIds = [...new Set(tradesData.map(t => t.user_id))];
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, role, avatar_url')
+          .in('id', userIds);
+
+        const enrichedTrades = tradesData.map(trade => {
+          const user = usersData?.find(u => u.id === trade.user_id);
+          return {
+            ...trade,
+            users: user ? { role: user.role, avatar_url: user.avatar_url } : { role: 'USER' }
+          };
+        });
+
+        setTrades(enrichedTrades as unknown as SocialTrade[]);
+      } else {
+        setTrades([]);
       }
     } catch (error) {
       console.error("Sosyal akış getirilirken hata:", error);

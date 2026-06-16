@@ -97,10 +97,10 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
               .getPublicUrl(fileName);
             finalImageUrl = publicUrl;
           } else {
-            console.warn("Resim yüklenemedi, işlem resimsiz kaydedilecek:", uploadError.message);
+            throw new Error(`Resim yüklenemedi: ${uploadError.message}. Supabase Storage yetkilerini kontrol edin.`);
           }
-        } catch (imgErr) {
-          console.warn("Resim yükleme atlandı:", imgErr);
+        } catch (imgErr: any) {
+          throw new Error(`Resim yükleme hatası: ${imgErr.message || imgErr}`);
         }
       }
 
