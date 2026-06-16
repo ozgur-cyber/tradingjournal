@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, ShieldX, UserX, AlertTriangle, CheckCircle, Search, Ban } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
+import { useAuthStore } from '@/store/authStore';
 
 interface FlaggedUser {
   id: string;
@@ -16,6 +17,9 @@ interface FlaggedUser {
 }
 
 const SocialSecurity = () => {
+  const { userData, user: currentUser } = useAuthStore();
+  const isFounder = userData?.role === 'Founder' || currentUser?.email === 'forexrico16@gmail.com' || currentUser?.email === 'admin@gmail.com';
+
   const [flags, setFlags] = useState<FlaggedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +41,6 @@ const SocialSecurity = () => {
         .limit(50);
 
       if (error) throw error;
-      // Handle the relation correctly
       const formattedData = (data || []).map((item: any) => ({
         ...item,
         users: Array.isArray(item.users) ? item.users[0] : item.users
@@ -54,7 +57,6 @@ const SocialSecurity = () => {
     if (!window.confirm("Bu kullanıcıyı kalıcı olarak sistemden uzaklaştırmak istediğinize emin misiniz?")) return;
     
     try {
-      // Ban user
       const { error: banError } = await supabase
         .from('users')
         .update({
@@ -66,7 +68,6 @@ const SocialSecurity = () => {
         
       if (banError) throw banError;
 
-      // Update flag status
       await supabase
         .from('user_flags')
         .update({ status: 'RESOLVED' })
@@ -91,9 +92,18 @@ const SocialSecurity = () => {
     }
   };
 
+  const maskEmail = (email: string) => {
+    if (!email) return '***@***.com';
+    const parts = email.split('@');
+    if (parts.length !== 2) return '***@***.com';
+    const [name, domain] = parts;
+    if (name.length <= 2) return `***@${domain}`;
+    return `${name.substring(0, 2)}***@${domain}`;
+  };
+
   const filteredFlags = flags.filter(f => 
     f.users?.username?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    f.users?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (isFounder && f.users?.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
     f.reason?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -111,7 +121,6 @@ const SocialSecurity = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glassmorphism p-6 rounded-2xl border border-border-primary border-t-brand-danger">
           <div className="flex items-center gap-3 mb-2">
@@ -187,7 +196,7 @@ const SocialSecurity = () => {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white">{flag.users?.username || 'Bilinmiyor'}</p>
-                          <p className="text-xs text-text-secondary">{flag.users?.email}</p>
+                          <p className="text-xs text-text-secondary">{isFounder ? flag.users?.email : maskEmail(flag.users?.email)}</p>
                         </div>
                       </div>
                     </td>

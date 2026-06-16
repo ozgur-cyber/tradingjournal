@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { Trophy, ShieldAlert, Search, UserX, UserCheck, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
+import { useAuthStore } from '@/store/authStore';
 
 interface UserWithExclusion {
   id: string;
@@ -13,6 +14,9 @@ interface UserWithExclusion {
 }
 
 const LeaderboardModeration = () => {
+  const { userData, user: currentUser } = useAuthStore();
+  const isFounder = userData?.role === 'Founder' || currentUser?.email === 'forexrico16@gmail.com' || currentUser?.email === 'admin@gmail.com';
+
   const [users, setUsers] = useState<UserWithExclusion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +29,6 @@ const LeaderboardModeration = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // Fetch all users
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, username, email, total_trades, total_pnl')
@@ -33,7 +36,6 @@ const LeaderboardModeration = () => {
 
       if (usersError) throw usersError;
 
-      // Fetch active exclusions
       const { data: exclusionsData, error: excError } = await supabase
         .from('leaderboard_exclusions')
         .select('user_id, reason');
@@ -64,7 +66,6 @@ const LeaderboardModeration = () => {
     try {
       setProcessingId(user.id);
       if (user.is_excluded) {
-        // Remove exclusion
         const { error } = await supabase
           .from('leaderboard_exclusions')
           .delete()
@@ -74,9 +75,8 @@ const LeaderboardModeration = () => {
         
         setUsers(users.map(u => u.id === user.id ? { ...u, is_excluded: false, exclusion_reason: undefined } : u));
       } else {
-        // Add exclusion
         const reason = window.prompt('Neden sıralamadan çıkarıyorsunuz?', 'Şüpheli işlem aktivitesi / Hile');
-        if (reason === null) return; // User cancelled
+        if (reason === null) return;
 
         const { error } = await supabase
           .from('leaderboard_exclusions')
@@ -94,9 +94,18 @@ const LeaderboardModeration = () => {
     }
   };
 
+  const maskEmail = (email: string) => {
+    if (!email) return '***@***.com';
+    const parts = email.split('@');
+    if (parts.length !== 2) return '***@***.com';
+    const [name, domain] = parts;
+    if (name.length <= 2) return `***@${domain}`;
+    return `${name.substring(0, 2)}***@${domain}`;
+  };
+
   const filteredUsers = users.filter(u => 
     u.username?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    (isFounder && u.email?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -160,7 +169,7 @@ const LeaderboardModeration = () => {
                           </div>
                           <div>
                             <p className="font-bold text-white">{user.username}</p>
-                            <p className="text-xs text-text-secondary">{user.email}</p>
+                            <p className="text-xs text-text-secondary">{isFounder ? user.email : maskEmail(user.email)}</p>
                           </div>
                         </div>
                       </td>

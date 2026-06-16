@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Users, DollarSign, Target, Award, ArrowUpRight, ArrowDownRight, Search, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
+import { useAuthStore } from '@/store/authStore';
 
 interface UserAnalytic {
   id: string;
@@ -15,6 +16,9 @@ interface UserAnalytic {
 }
 
 const UserAnalytics = () => {
+  const { userData, user: currentUser } = useAuthStore();
+  const isFounder = userData?.role === 'Founder' || currentUser?.email === 'forexrico16@gmail.com' || currentUser?.email === 'admin@gmail.com';
+
   const [users, setUsers] = useState<UserAnalytic[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +46,7 @@ const UserAnalytics = () => {
 
   const filteredUsers = users.filter(u => 
     u.username?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    (isFounder && u.email?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const topPnL = users.length > 0 ? users[0] : null;
@@ -154,7 +158,9 @@ const UserAnalytics = () => {
                             {user.username || 'İsimsiz'}
                             {user.role === 'Founder' && <span className="text-[9px] px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded">Founder</span>}
                           </p>
-                          <p className="text-xs text-text-secondary">{user.email}</p>
+                          <p className="text-xs text-text-secondary">
+                            {isFounder ? user.email : '***@***.com'}
+                          </p>
                         </div>
                       </div>
                     </td>

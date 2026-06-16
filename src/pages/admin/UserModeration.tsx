@@ -23,6 +23,16 @@ interface UserData {
 
 const AdminPanel = () => {
   const { userData, user } = useAuthStore();
+  const isFounder = userData?.role === 'Founder' || user?.email === 'forexrico16@gmail.com' || user?.email === 'admin@gmail.com';
+
+  const maskEmail = (email: string) => {
+    if (!email) return '***@***.com';
+    const parts = email.split('@');
+    if (parts.length !== 2) return '***@***.com';
+    const [name, domain] = parts;
+    if (name.length <= 2) return `***@${domain}`;
+    return `${name.substring(0, 2)}***@${domain}`;
+  };
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -230,7 +240,7 @@ const AdminPanel = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                          (isFounder && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesRole = roleFilter === 'All' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -415,7 +425,7 @@ const AdminPanel = () => {
                               <span>{user.username || 'İsimsiz Trader'}</span>
                               {user.is_banned && <Ban className="w-3.5 h-3.5 text-brand-danger" />}
                             </div>
-                            <div className="text-xs text-text-secondary">{user.email}</div>
+                            <div className="text-xs text-text-secondary">{isFounder ? user.email : maskEmail(user.email)}</div>
                           </div>
                         </div>
                       </td>
@@ -627,7 +637,7 @@ const AdminPanel = () => {
                 </div>
                 <div>
                   <h4 className="text-xl font-bold text-text-primary">{selectedUser.username || 'İsimsiz Trader'}</h4>
-                  <p className="text-text-secondary text-sm">{selectedUser.email}</p>
+                  <p className="text-text-secondary text-sm">{isFounder ? selectedUser.email : maskEmail(selectedUser.email)}</p>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold mt-1 ${
                     selectedUser.role === 'Founder' ? 'bg-yellow-500/10 text-yellow-500' : 
                     selectedUser.role === 'Admin' ? 'bg-brand-danger/10 text-brand-danger' : 
