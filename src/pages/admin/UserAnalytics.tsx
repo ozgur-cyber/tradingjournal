@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, DollarSign, Target, Award, ArrowUpRight, ArrowDownRight, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp, TrendingDown, Users, DollarSign, Target, Award, ArrowUpRight, ArrowDownRight, Search, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 
 interface UserAnalytic {
