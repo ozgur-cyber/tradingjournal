@@ -72,43 +72,8 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
 
     const rrValue = parseFloat(rr);
 
-    // 10R ve üstü işlemlerde fotoğraf zorunluluğu kontrolü
-    if (rrValue >= 10 && !image) {
-      // Mevcut ihlal sayısını çek
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('no_photo_violations')
-        .eq('id', user.id)
-        .single();
-
-      const violations = (currentUser?.no_photo_violations || 0) + 1;
-
-      // İhlali kaydet
-      await supabase
-        .from('users')
-        .update({ no_photo_violations: violations })
-        .eq('id', user.id);
-
-      if (violations >= 3) {
-        // 3. ihlal = 7 gün ban
-        const banUntil = new Date();
-        banUntil.setDate(banUntil.getDate() + 7);
-        await supabase
-          .from('users')
-          .update({
-            is_banned: true,
-            ban_until: banUntil.toISOString(),
-            ban_reason: `10R+ işlemlerde 3 kez fotoğraf eklemeden kayıt girme ihlali (7 gün ban)`,
-            banned_by: 'Sistem (Otomatik)'
-          })
-          .eq('id', user.id);
-        
-        setError(`⛔ 3. ihlal! 10R ve üstü işlemlerde fotoğraf eklemek zorunludur. Hesabınız 7 gün askıya alındı.`);
-        setLoading(false);
-        return;
-      }
-
-      setError(`⚠️ UYARI (${violations}/3): 10R ve üstü işlemlerde ekran görüntüsü eklemek zorunludur! 3 ihlalde hesabınız 7 gün askıya alınacaktır. Lütfen fotoğraf ekleyip tekrar deneyin.`);
+    if (!image) {
+      setError("⚠️ Lütfen işleminizin ekran görüntüsünü (kanıt) yükleyin. Şeffaflık gereği tüm işlemlerde fotoğraf zorunludur.");
       setLoading(false);
       return;
     }
@@ -159,8 +124,7 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
             strategy,
             notes,
             image_url: finalImageUrl,
-            result: isWin ? 'WIN' : isLoss ? 'LOSS' : 'BREAKEVEN',
-            is_public: true
+            result: isWin ? 'WIN' : isLoss ? 'LOSS' : 'BREAKEVEN'
           }
         ]);
 
@@ -335,7 +299,7 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
 
             {/* Supabase Storage File Upload */}
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-gray-300">Ekran Görüntüsü Yükle (Ücretsiz!)</label>
+              <label className="text-sm font-medium text-gray-300">Ekran Görüntüsü Yükle (Zorunlu) *</label>
               <input 
                 type="file" 
                 accept="image/*"
