@@ -65,12 +65,7 @@ const Leaderboard = () => {
         const detailedUsers = finalData.map(user => {
           const userTrades = tradesData?.filter(t => t.user_id === user.id) || [];
           
-          // 10R+ fotoğrafsız kontrolleri
-          const validTrades = userTrades.filter(t => {
-            const rr = Number(t.risk_reward) || 0;
-            if (rr >= 10 && !t.image_url) return false;
-            return true;
-          });
+          const validTrades = userTrades.filter(t => t.image_url);
           
           const totalRR = validTrades.reduce((sum, t) => sum + (Number(t.risk_reward) || 0), 0);
           const avgRR = validTrades.length > 0 ? totalRR / validTrades.length : 0;
@@ -91,7 +86,7 @@ const Leaderboard = () => {
 
           const recentTrend = userTrades.slice(0, 5).map(t => t.result === 'WIN' ? 'W' : t.result === 'LOSS' ? 'L' : 'B').reverse() as ('W' | 'L' | 'B')[];
 
-          const hasInvalidTrades = userTrades.some(t => (Number(t.risk_reward) || 0) >= 10 && !t.image_url);
+          const hasInvalidTrades = userTrades.some(t => !t.image_url);
 
           return { 
             ...user, 
@@ -102,7 +97,7 @@ const Leaderboard = () => {
             recent_trend: recentTrend,
             has_invalid_trades: hasInvalidTrades
           };
-        });
+        }).filter(u => !u.has_invalid_trades);
 
         setUsers(detailedUsers);
       } else {

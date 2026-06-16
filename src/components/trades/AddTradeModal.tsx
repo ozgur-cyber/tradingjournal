@@ -25,6 +25,7 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [customStrategies, setCustomStrategies] = useState<string[]>([]);
+  const [wantsLeaderboard, setWantsLeaderboard] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -72,8 +73,8 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
 
     const rrValue = parseFloat(rr);
 
-    if (!image) {
-      setError("⚠️ Lütfen işleminizin ekran görüntüsünü (kanıt) yükleyin. Şeffaflık gereği tüm işlemlerde fotoğraf zorunludur.");
+    if (wantsLeaderboard && !image) {
+      setError("⚠️ Şampiyonlar Ligi'nde (Leaderboard) yarışabilmek için işleminizin ekran görüntüsünü (kanıt) yüklemek ZORUNLUDUR. Sadece kişisel günlüğünüze kaydetmek isterseniz aşağıdaki tiki kaldırın.");
       setLoading(false);
       return;
     }
@@ -299,7 +300,9 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
 
             {/* Supabase Storage File Upload */}
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-gray-300">Ekran Görüntüsü Yükle (Zorunlu) *</label>
+              <label className="text-sm font-medium text-gray-300">
+                Ekran Görüntüsü Yükle {wantsLeaderboard ? <span className="text-brand-danger font-bold">(Zorunlu) *</span> : <span className="text-gray-500">(İsteğe Bağlı)</span>}
+              </label>
               <input 
                 type="file" 
                 accept="image/*"
@@ -340,6 +343,25 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
                 placeholder="İşleme giriş sebebiniz, psikolojiniz vb. notlar..."
                 className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 focus:border-brand-purple/50 outline-none resize-none"
               />
+            </div>
+
+            <div className="md:col-span-2 bg-gradient-to-r from-brand-purple/10 to-brand-blue/5 border border-brand-purple/30 p-4 rounded-xl mt-2">
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center mt-0.5">
+                  <input 
+                    type="checkbox" 
+                    checked={wantsLeaderboard}
+                    onChange={(e) => setWantsLeaderboard(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-500 text-brand-purple focus:ring-brand-purple bg-black/50 transition-colors cursor-pointer"
+                  />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white group-hover:text-brand-purple transition-colors">🏆 Şampiyonlar Ligi'nde (Leaderboard) Yarış</p>
+                  <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                    Eğer işaretliyse, şeffaflık kuralları gereği bu işlemin kanıt fotoğrafını yüklemek <b>zorunludur</b>. İşaretini kaldırırsanız fotoğraf eklemeden de işleminizi kaydedebilirsiniz ancak otomatik olarak <b>Leaderboard sıralamasından diskalifiye edilirsiniz</b>.
+                  </p>
+                </div>
+              </label>
             </div>
           </div>
         </div>
