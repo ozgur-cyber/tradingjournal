@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, UserCheck, Activity, Target, TrendingUp, DollarSign, Users } from 'lucide-react';
+import { ArrowLeft, UserPlus, UserCheck, Activity, Target, TrendingUp, DollarSign, Users, Camera } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
+import { useAuthStore } from '@/store/authStore';
 
 interface UserProfile {
   id: string;
@@ -12,6 +13,7 @@ interface UserProfile {
   total_trades: number;
   role: string;
   created_at: string;
+  avatar_url?: string;
 }
 
 interface RecentTrade {
@@ -29,8 +31,12 @@ const PublicProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
+  const { userData, refreshUserData } = useAuthStore();
   const { followedUsers, toggleFollow } = useSocialStore();
+  
+  const isOwnProfile = userData?.username === username;
   const isFollowing = followedUsers.includes(username || '');
 
   useEffect(() => {
@@ -42,21 +48,21 @@ const PublicProfile = () => {
   const fetchProfile = async () => {
     try {
       // 1. Fetch user stats
-      const { data: userData, error: userError } = await supabase
+      const { data: fetchUserData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('username', username)
         .single();
 
       if (userError) throw userError;
-      setProfile(userData);
+      setProfile(fetchUserData);
 
       // 2. Fetch recent public trades
-      if (userData) {
+      if (fetchUserData) {
         const { data: tradeData, error: tradeError } = await supabase
           .from('trades')
           .select('id, pair, direction, pnl, created_at, risk_reward')
-          .eq('user_id', userData.id)
+          .eq('user_id', fetchUserData.id)
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -68,6 +74,48 @@ const PublicProfile = () => {
       console.error("Profil getirilirken hata:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !profile) return;
+    const file = e.target.files[0];
+    
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Fotoğraf boyutu 2MB'dan küçük olmalıdır.");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}/avatar_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+      await refreshUserData();
+      alert("Profil fotoğrafı başarıyla güncellendi!");
+    } catch (error: any) {
+      console.error("Avatar yükleme hatası:", error);
+      alert("Fotoğraf yüklenemedi. 'avatars' Storage klasörünün oluşturulduğundan ve açık olduğundan emin misiniz?");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -110,9 +158,27 @@ const PublicProfile = () => {
         <div className="px-8 pb-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-12 relative z-10">
             <div className="flex items-end space-x-5">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-white font-bold text-4xl shadow-xl border-4 border-bg-primary">
-                {profile.username?.charAt(0).toUpperCase()}
+              <div className="relative group">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.username} className="w-24 h-24 rounded-full object-cover border-4 border-bg-primary shadow-xl" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-white font-bold text-4xl shadow-xl border-4 border-bg-primary">
+                    {profile.username?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                
+                {isOwnProfile && (
+                  <label className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm border-4 border-transparent">
+                    {uploading ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    ) : (
+                      <Camera className="w-8 h-8 text-white/80 hover:text-white" />
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                  </label>
+                )}
               </div>
+              
               <div className="mb-2">
                 <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
                   {profile.username}
@@ -137,16 +203,18 @@ const PublicProfile = () => {
               </div>
             </div>
 
-            <button 
-              onClick={() => toggleFollow(profile.username)}
-              className={`px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all shadow-lg ${
-                isFollowing 
-                  ? 'bg-bg-surface-hover text-brand-success border border-brand-success/30 hover:bg-bg-surface' 
-                  : 'bg-brand-purple text-white hover:bg-brand-purple/90 hover:-translate-y-1'
-              }`}
-            >
-              {isFollowing ? <><UserCheck className="w-5 h-5" /> Takiptesin</> : <><UserPlus className="w-5 h-5" /> Takip Et</>}
-            </button>
+            {!isOwnProfile && (
+              <button 
+                onClick={() => toggleFollow(profile.username)}
+                className={`px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all shadow-lg ${
+                  isFollowing 
+                    ? 'bg-bg-surface-hover text-brand-success border border-brand-success/30 hover:bg-bg-surface' 
+                    : 'bg-brand-purple text-white hover:bg-brand-purple/90 hover:-translate-y-1'
+                }`}
+              >
+                {isFollowing ? <><UserCheck className="w-5 h-5" /> Takiptesin</> : <><UserPlus className="w-5 h-5" /> Takip Et</>}
+              </button>
+            )}
           </div>
         </div>
       </div>
