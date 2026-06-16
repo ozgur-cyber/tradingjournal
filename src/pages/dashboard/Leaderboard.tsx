@@ -24,6 +24,7 @@ interface LeaderboardUser {
   best_trade?: number;
   worst_trade?: number;
   recent_trend?: ('W' | 'L' | 'B')[];
+  has_invalid_trades?: boolean;
 }
 
 const Leaderboard = () => {
@@ -101,7 +102,7 @@ const Leaderboard = () => {
             recent_trend: recentTrend,
             has_invalid_trades: hasInvalidTrades
           };
-        }).filter(u => !u.has_invalid_trades || u.average_rr > 0);
+        });
 
         setUsers(detailedUsers);
       } else {
@@ -164,7 +165,12 @@ const Leaderboard = () => {
                   <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-gray-300 to-gray-500 flex items-center justify-center text-white text-2xl font-black mb-3 shadow-lg">
                     {top3[1].username?.charAt(0).toUpperCase()}
                   </div>
-                  <Link to={`/profile/${top3[1].username}`} className="font-bold text-xl hover:text-brand-purple transition-colors">{top3[1].username}</Link>
+                  <div className="flex items-center gap-1">
+                    <Link to={`/profile/${top3[1].username}`} className="font-bold text-xl hover:text-brand-purple transition-colors">{top3[1].username}</Link>
+                    {top3[1].has_invalid_trades && (
+                      <AlertTriangle className="w-4 h-4 text-brand-danger" title="Doğrulanmamış şüpheli işlemler (10R+ fotoğrafsız) içeriyor" />
+                    )}
+                  </div>
                   <p className="text-gray-400 text-xs uppercase tracking-widest font-bold mt-1 mb-4">Gümüş Trader</p>
                   <div className="mt-auto w-full">
                     <p className={`text-2xl font-black ${top3[1].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
@@ -184,7 +190,12 @@ const Leaderboard = () => {
                   <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-white text-3xl font-black mb-3 shadow-[0_0_20px_rgba(234,179,8,0.4)]">
                     {top3[0].username?.charAt(0).toUpperCase()}
                   </div>
-                  <Link to={`/profile/${top3[0].username}`} className="font-black text-2xl text-yellow-500 hover:text-yellow-400 transition-colors">{top3[0].username}</Link>
+                  <div className="flex items-center gap-1">
+                    <Link to={`/profile/${top3[0].username}`} className="font-black text-2xl text-yellow-500 hover:text-yellow-400 transition-colors">{top3[0].username}</Link>
+                    {top3[0].has_invalid_trades && (
+                      <AlertTriangle className="w-5 h-5 text-brand-danger" title="Doğrulanmamış şüpheli işlemler (10R+ fotoğrafsız) içeriyor" />
+                    )}
+                  </div>
                   <p className="text-yellow-500/80 text-xs uppercase tracking-widest font-bold mt-1 mb-4 animate-pulse">Şampiyon</p>
                   <div className="mt-auto w-full bg-yellow-500/10 rounded-xl p-3 border border-yellow-500/20">
                     <p className={`text-3xl font-black drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] ${top3[0].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
@@ -206,7 +217,12 @@ const Leaderboard = () => {
                   <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-600 to-amber-800 flex items-center justify-center text-white text-xl font-black mb-3 shadow-lg">
                     {top3[2].username?.charAt(0).toUpperCase()}
                   </div>
-                  <Link to={`/profile/${top3[2].username}`} className="font-bold text-lg hover:text-brand-purple transition-colors">{top3[2].username}</Link>
+                  <div className="flex items-center gap-1">
+                    <Link to={`/profile/${top3[2].username}`} className="font-bold text-lg hover:text-brand-purple transition-colors">{top3[2].username}</Link>
+                    {top3[2].has_invalid_trades && (
+                      <AlertTriangle className="w-4 h-4 text-brand-danger" title="Doğrulanmamış şüpheli işlemler (10R+ fotoğrafsız) içeriyor" />
+                    )}
+                  </div>
                   <p className="text-amber-600 text-[10px] uppercase tracking-widest font-bold mt-1 mb-4">Bronz Trader</p>
                   <div className="mt-auto w-full">
                     <p className={`text-xl font-black ${top3[2].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
@@ -261,13 +277,18 @@ const Leaderboard = () => {
                                   {user.username?.charAt(0).toUpperCase() || 'U'}
                                 </div>
                                 <div className="flex flex-col">
-                                  <Link 
-                                    to={`/profile/${user.username}`} 
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="font-bold text-text-primary hover:text-brand-purple transition-colors text-sm"
-                                  >
-                                    {user.username}
-                                  </Link>
+                                  <div className="flex items-center gap-1">
+                                    <Link 
+                                      to={`/profile/${user.username}`} 
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="font-bold text-text-primary hover:text-brand-purple transition-colors text-sm"
+                                    >
+                                      {user.username}
+                                    </Link>
+                                    {user.has_invalid_trades && (
+                                      <AlertTriangle className="w-3.5 h-3.5 text-brand-danger" title="Doğrulanmamış işlemler" />
+                                    )}
+                                  </div>
                                   <span className="text-[10px] text-text-secondary">{user.total_trades} Toplam İşlem</span>
                                 </div>
                               </div>
