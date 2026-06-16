@@ -167,7 +167,9 @@ const Leaderboard = () => {
                   <Link to={`/profile/${top3[1].username}`} className="font-bold text-xl hover:text-brand-purple transition-colors">{top3[1].username}</Link>
                   <p className="text-gray-400 text-xs uppercase tracking-widest font-bold mt-1 mb-4">Gümüş Trader</p>
                   <div className="mt-auto w-full">
-                    <p className="text-2xl font-black text-brand-success">+${Number(top3[1].total_pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    <p className={`text-2xl font-black ${top3[1].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                      {top3[1].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[1].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </p>
                     <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[1].win_rate.toFixed(1)}</p>
                   </div>
                 </div>
@@ -185,8 +187,8 @@ const Leaderboard = () => {
                   <Link to={`/profile/${top3[0].username}`} className="font-black text-2xl text-yellow-500 hover:text-yellow-400 transition-colors">{top3[0].username}</Link>
                   <p className="text-yellow-500/80 text-xs uppercase tracking-widest font-bold mt-1 mb-4 animate-pulse">Şampiyon</p>
                   <div className="mt-auto w-full bg-yellow-500/10 rounded-xl p-3 border border-yellow-500/20">
-                    <p className="text-3xl font-black text-brand-success drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
-                      +${Number(top3[0].total_pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <p className={`text-3xl font-black drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] ${top3[0].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                      {top3[0].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[0].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
                     <div className="flex justify-between items-center mt-2 px-2">
                       <span className="text-xs text-text-secondary font-bold">WR: %{top3[0].win_rate.toFixed(1)}</span>
@@ -207,7 +209,9 @@ const Leaderboard = () => {
                   <Link to={`/profile/${top3[2].username}`} className="font-bold text-lg hover:text-brand-purple transition-colors">{top3[2].username}</Link>
                   <p className="text-amber-600 text-[10px] uppercase tracking-widest font-bold mt-1 mb-4">Bronz Trader</p>
                   <div className="mt-auto w-full">
-                    <p className="text-xl font-black text-brand-success">+${Number(top3[2].total_pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    <p className={`text-xl font-black ${top3[2].total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                      {top3[2].total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(top3[2].total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </p>
                     <p className="text-xs text-text-secondary font-medium mt-1">Win Rate: %{top3[2].win_rate.toFixed(1)}</p>
                   </div>
                 </div>
@@ -304,7 +308,7 @@ const Leaderboard = () => {
                             </td>
                             <td className="p-4 text-right">
                               <span className={`text-base font-black ${user.total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
-                                {user.total_pnl >= 0 ? '+' : ''}${Number(user.total_pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                {user.total_pnl >= 0 ? '+' : '-'}${Math.abs(Number(user.total_pnl)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </span>
                             </td>
                             <td className="p-4 text-center">
