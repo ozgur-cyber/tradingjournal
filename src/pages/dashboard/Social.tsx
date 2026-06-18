@@ -3,6 +3,9 @@ import { Users, MessageSquare, Heart, Rocket, UserPlus, UserCheck, Send, Trendin
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
+import { useAuthStore } from '@/store/authStore';
+import { db } from '@/lib/firebase/config';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 
 interface SocialTrade {
   id: string;
@@ -39,7 +42,7 @@ const Social = () => {
       setLoading(true);
       const { data: tradesData, error: tradesError } = await supabase
         .from('trades')
-        .select('*')
+        .select('*').eq('isPublic', true)
         .order('created_at', { ascending: false })
         .limit(30);
 
@@ -208,7 +211,44 @@ const Social = () => {
 };
 
 const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d: string) => string }) => {
-  const { followedUsers, likedTrades, comments, toggleFollow, toggleLike, addComment } = useSocialStore();
+  const { userData, user: authUser } = useAuthStore();
+  const [firestoreComments, setFirestoreComments] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const q = query(collection(db, 'trades', trade.id, 'comments'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setFirestoreComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [trade.id]);
+
+  const submitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || !userData) return;
+    try {
+      await addDoc(collection(db, 'trades', trade.id, 'comments'), {
+        userId: userData.id,
+        username: userData.username || 'User',
+        avatarURL: userData.avatar_url || '',
+        text: newComment.trim(),
+        timestamp: new Date().toISOString()
+      });
+      setNewComment('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (confirm("Bu yorumu silmek istediğinize emin misiniz?")) {
+      try {
+        await deleteDoc(doc(db, 'trades', trade.id, 'comments', commentId));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+  const { followedUsers, likedTrades, toggleFollow, toggleLike } = useSocialStore();
   
   const isLiked = likedTrades.includes(trade.id);
   const isFollowing = followedUsers.includes(trade.username);
@@ -242,9 +282,9 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
     : null;
 
   return (
-    <div className="glassmorphism p-0 rounded-2xl overflow-hidden hover:border-brand-purple/30 transition-all group">
+    <div className="glassmorphism p-0 rounded-2xl overflow-hidden hover:border-brand-purple/30 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(139,92,246,0.15)] group relative">
       {/* Top accent bar */}
-      <div className={`h-1 ${trade.pnl >= 0 ? 'bg-gradient-to-r from-brand-success/80 to-brand-success/20' : 'bg-gradient-to-r from-brand-danger/80 to-brand-danger/20'}`}></div>
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${trade.pnl >= 0 ? 'bg-gradient-to-b from-brand-success to-brand-success/20' : 'bg-gradient-to-b from-brand-danger to-brand-danger/20'}`}></div>
       
       <div className="p-6 space-y-4">
         {/* User Header */}
@@ -385,7 +425,7 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
               
               {trade.image_url && (
                 <div className="mt-2 rounded-xl overflow-hidden border border-border-primary">
-                  <img src={trade.image_url} alt="Trade Screenshot" className="w-full h-auto object-cover max-h-[400px] hover:scale-[1.02] transition-transform duration-500" />
+                  <a href={trade.image_url} target="_blank" rel="noreferrer"><img src={trade.image_url} alt="Trade Screenshot" className="w-full h-auto object-cover max-h-[400px] hover:scale-[1.02] transition-transform duration-500 cursor-zoom-in" title="Büyütmek için tıkla" /></a>
                 </div>
               )}
             </div>
@@ -406,22 +446,32 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
             className={`flex items-center space-x-2 transition-all ${showComments ? 'text-brand-blue' : 'text-text-secondary hover:text-brand-blue'}`}
           >
             <MessageSquare className="w-[18px] h-[18px]" />
-            <span className="text-xs font-bold">{tradeComments.length > 0 ? `${tradeComments.length} Yorum` : 'Yorum'}</span>
+            <span className="text-xs font-bold">{firestoreComments.length > 0 ? `${firestoreComments.length} Yorum` : 'Yorum'}</span>
           </button>
         </div>
 
         {/* Comments Section */}
         {showComments && (
           <div className="ml-14 pt-4 border-t border-border-primary space-y-3 animate-fade-in">
-            {tradeComments.length > 0 ? (
+            {firestoreComments.length > 0 ? (
               <div className="space-y-2.5">
-                {tradeComments.map(comment => (
+                {firestoreComments.map(comment => (
                   <div key={comment.id} className="bg-bg-surface-hover dark:bg-black/20 p-3.5 rounded-xl text-sm border border-border-primary/50">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="font-bold text-text-primary text-xs">{comment.username}</span>
-                      <span className="text-[10px] text-text-secondary">{getTimeAgo(comment.createdAt)}</span>
+                    <div className="flex justify-between items-start mb-1.5">
+                      <div className="flex items-center gap-2">
+                        {comment.avatarURL ? <img src={comment.avatarURL} className="w-6 h-6 rounded-full object-cover" /> : <div className="w-6 h-6 rounded-full bg-brand-purple/20 flex items-center justify-center text-[10px] font-bold text-brand-purple">{comment.username?.charAt(0)}</div>}
+                        <div>
+                          <span className="font-bold text-text-primary text-xs">{comment.username}</span>
+                          <span className="text-[9px] text-text-secondary ml-2">{getTimeAgo(comment.timestamp)}</span>
+                        </div>
+                      </div>
+                      {(comment.userId === userData?.id || userData?.role === 'Admin' || userData?.role === 'Founder') && (
+                        <button onClick={() => deleteComment(comment.id)} className="text-text-secondary hover:text-brand-danger transition-colors p-1" title="Yorumu Sil">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                        </button>
+                      )}
                     </div>
-                    <p className="text-text-secondary text-[13px] leading-relaxed">{comment.text}</p>
+                    <p className="text-text-secondary text-[13px] leading-relaxed ml-8">{comment.text}</p>
                   </div>
                 ))}
               </div>

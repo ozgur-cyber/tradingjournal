@@ -19,6 +19,7 @@ interface UserData {
   ban_reason?: string;
   warn_count?: number;
   ban_until?: string;
+  avatar_url?: string;
 }
 
 const AdminPanel = () => {
@@ -418,7 +419,7 @@ const AdminPanel = () => {
                             user.role === 'Admin' ? 'bg-gradient-to-tr from-brand-danger to-red-600' :
                             'bg-gradient-to-tr from-brand-purple to-brand-blue'
                           }`}>
-                            {user.username?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                            {user.avatar_url ? <img src={user.avatar_url} className="w-full h-full rounded-xl object-cover" alt="avatar" /> : (user.username?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase())}
                           </div>
                           <div>
                             <div className="font-bold text-text-primary flex items-center space-x-2">

@@ -17,6 +17,8 @@ interface LeaderboardUser {
   id: string;
   username: string;
   total_pnl: number;
+  weighted_score?: number;
+  avatar_url?: string;
   win_rate: number;
   total_trades: number;
   average_rr?: number;
@@ -94,7 +96,7 @@ const Leaderboard = () => {
       // Kullanıcı detaylarını çek
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, username')
+        .select('id, username, avatar_url')
         .in('id', userIds);
         
       if (usersError) throw usersError;
@@ -131,12 +133,23 @@ const Leaderboard = () => {
         const bestTrade = pnls.length > 0 ? Math.max(...pnls) : 0;
         const worstTrade = pnls.length > 0 ? Math.min(...pnls) : 0;
 
+        
+        // Weighted Score Hesaplaması
+        const maxPnL = 10000; // normalize
+        const pnlScore = Math.min((totalPnL / maxPnL) * 100, 100) * 0.40;
+        const winRateScore = winRate * 0.25;
+        const rrScore = Math.min(avgRR * 10, 100) * 0.20;
+        const consistencyScore = Math.min(totalTrades * 5, 100) * 0.15;
+        const weightedScore = pnlScore + winRateScore + rrScore + consistencyScore;
+
         const recentTrend = userTrades.slice(0, 5).map(t => t.pnl > 0 ? 'W' : t.pnl < 0 ? 'L' : 'B').reverse() as ('W' | 'L' | 'B')[];
 
         return { 
           id: userId,
           username: user?.username || 'Trader',
+          avatar_url: user?.avatar_url,
           total_pnl: totalPnL,
+          weighted_score: weightedScore,
           win_rate: winRate,
           total_trades: totalTrades,
           average_rr: totalRR,
@@ -149,7 +162,7 @@ const Leaderboard = () => {
       }).filter(Boolean) as LeaderboardUser[];
 
       // PnL'ye göre sırala
-      detailedUsers.sort((a, b) => b.total_pnl - a.total_pnl);
+      detailedUsers.sort((a, b) => (b.weighted_score || b.total_pnl) - (a.weighted_score || a.total_pnl));
       setUsers(detailedUsers.slice(0, 20));
 
     } catch (error) {

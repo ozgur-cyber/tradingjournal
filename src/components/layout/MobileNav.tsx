@@ -8,7 +8,7 @@ const MobileNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-brand-surface/90 backdrop-blur-lg border-t border-white/5 z-50 px-2 flex justify-around items-center pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-bg-surface/90 dark:bg-[#0a0a0f]/90 backdrop-blur-lg border-t border-white/5 z-50 px-2 flex justify-around items-center pb-safe">
       <NavLink to="/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full space-y-1 transition-all ${isActive ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-300'}`}>
         <LayoutDashboard className="w-6 h-6" />
         <span className="text-[10px] font-medium">Dash</span>

@@ -58,7 +58,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen?: boolean, onClose?: () => void }
         />
       )}
       
-      <aside className={`flex flex-col w-[260px] h-[calc(100vh-2rem)] fixed left-4 top-4 bg-bg-surface/90 dark:bg-[#131320]/95 backdrop-blur-xl border border-border-primary/50 dark:border-white/5 rounded-3xl p-6 transition-all duration-300 shadow-2xl z-50 ${isOpen ? 'translate-x-0' : '-translate-x-[150%] md:translate-x-0'} md:flex`}>
+      <aside className={`flex flex-col w-[260px] h-[calc(100vh-2rem)] fixed left-4 top-4 bg-bg-surface/90 dark:bg-[#0a0a0f]/95 backdrop-blur-xl border border-border-primary/50 dark:border-white/5 rounded-3xl p-6 transition-all duration-300 shadow-2xl z-50 ${isOpen ? 'translate-x-0' : '-translate-x-[150%] md:translate-x-0'} md:flex`}>
         <div className="mb-10 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.5)]">
