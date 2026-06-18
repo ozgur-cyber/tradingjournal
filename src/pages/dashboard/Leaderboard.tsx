@@ -34,11 +34,11 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  const [selectedMonth, setSelectedMonth] = useState<string>(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [availableMonths, setAvailableMonths] = useState<{value: string, label: string}[]>([]);
 
   useEffect(() => {
-    const months = [];
+    const months = [{ value: 'all', label: 'Tüm Zamanlar' }];
     const currentDate = new Date();
     const startDate = new Date(2026, 5, 1);
     for (let i = 0; i < 12; i++) {
@@ -62,6 +62,13 @@ const Leaderboard = () => {
       const { data: excData } = await supabase.from('leaderboard_exclusions').select('user_id');
       const excludedIds = excData?.map(e => e.user_id) || [];
 
+      // Tüm kullanıcıları çek
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, avatar_url');
+        
+      if (usersError) throw usersError;
+
       let tradesQuery = supabase.from('trades').select('user_id, result, pnl, pair, created_at, risk_reward, image_url');
       
       if (selectedMonth !== 'all') {
@@ -74,40 +81,28 @@ const Leaderboard = () => {
       const { data: tradesData, error: tradesError } = await tradesQuery;
       if (tradesError) throw tradesError;
 
-      if (!tradesData || tradesData.length === 0) {
-        setUsers([]);
-        return;
-      }
-
       // İşlemleri user_id bazında grupla
       const userTradesMap = new Map<string, any[]>();
-      tradesData.forEach(t => {
-        if (!userTradesMap.has(t.user_id)) userTradesMap.set(t.user_id, []);
-        userTradesMap.get(t.user_id)!.push(t);
-      });
-
-      const userIds = Array.from(userTradesMap.keys()).filter(id => !excludedIds.includes(id));
-      
-      if (userIds.length === 0) {
-        setUsers([]);
-        return;
+      if (tradesData) {
+        tradesData.forEach(t => {
+          if (!userTradesMap.has(t.user_id)) userTradesMap.set(t.user_id, []);
+          userTradesMap.get(t.user_id)!.push(t);
+        });
       }
 
-      // Kullanıcı detaylarını çek
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, username, avatar_url')
-        .in('id', userIds);
-        
-      if (usersError) throw usersError;
+      if (!usersData) return;
 
-      const detailedUsers = userIds.map(userId => {
+      const validUsers = usersData.filter(u => !excludedIds.includes(u.id));
+
+      const detailedUsers = validUsers.map(user => {
+        const userId = user.id;
+        const userTrades = userTradesMap.get(userId) || [];
         const user = usersData?.find(u => u.id === userId);
         const userTrades = userTradesMap.get(userId) || [];
         
         
         
-        if (userTrades.length === 0) return null;
+        // if (userTrades.length === 0) return null; // We allow 0 trades to show up as well if they somehow get here
 
         const validTrades = userTrades;
         
