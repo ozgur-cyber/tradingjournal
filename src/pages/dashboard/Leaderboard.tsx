@@ -105,9 +105,9 @@ const Leaderboard = () => {
         const user = usersData?.find(u => u.id === userId);
         const userTrades = userTradesMap.get(userId) || [];
         
-        const hasInvalidTrades = userTrades.some(t => !t.image_url);
-        // Fotoğrafsız işlemi olanlar Leaderboard'a giremez
-        if (hasInvalidTrades) return null;
+        
+        
+        if (userTrades.length === 0) return null;
 
         const validTrades = userTrades;
         

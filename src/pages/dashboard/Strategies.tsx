@@ -149,7 +149,7 @@ const Strategies = () => {
 
       {/* Add Strategy Form */}
       <div className="glassmorphism p-6 rounded-2xl">
-        <form onSubmit={handleAddStrategy} className="flex gap-4">
+        <form onSubmit={handleAddStrategy} className="flex flex-col sm:flex-row gap-4">
           <input 
             type="text" 
             value={newStrategyName}

@@ -467,7 +467,7 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
                       </div>
                       {(comment.userId === userData?.id || userData?.role === 'Admin' || userData?.role === 'Founder') && (
                         <button onClick={() => deleteComment(comment.id)} className="text-text-secondary hover:text-brand-danger transition-colors p-1" title="Yorumu Sil">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>

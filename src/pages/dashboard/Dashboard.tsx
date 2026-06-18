@@ -98,10 +98,10 @@ const Dashboard = () => {
     fetchTrades();
   }, [user, timeFilter]);
 
-  const totalPnL = timeFilter === 'all' ? (userData?.total_pnl || 0) : filteredStats.pnl;
-  const winRate = timeFilter === 'all' ? (userData?.win_rate || 0) : filteredStats.winRate;
-  const totalTrades = timeFilter === 'all' ? (userData?.total_trades || 0) : filteredStats.trades;
-  const winTrades = timeFilter === 'all' ? (userData?.win_trades || 0) : filteredStats.wins;
+  const totalPnL = filteredStats.pnl;
+  const winRate = filteredStats.winRate;
+  const totalTrades = filteredStats.trades;
+  const winTrades = filteredStats.wins;
 
   return (
     <div className="space-y-6">

@@ -21,6 +21,7 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
   const [pnl, setPnl] = useState('');
   const [strategy, setStrategy] = useState('Smart Money Concepts');
   const [notes, setNotes] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
   const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -124,6 +125,8 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
             strategy,
             notes,
             image_url: finalImageUrl,
+            isPublic: isPublic,
+            screenshotURL: finalImageUrl,
             result: isWin ? 'WIN' : isLoss ? 'LOSS' : 'BREAKEVEN'
           }
         ]);

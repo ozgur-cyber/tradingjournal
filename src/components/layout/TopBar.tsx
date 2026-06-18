@@ -75,7 +75,7 @@ const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-white font-bold cursor-pointer shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:scale-105 transition-transform"
           >
-            {userData?.username?.charAt(0).toUpperCase() || 'U'}
+            {userData?.avatar_url ? <img src={userData.avatar_url} className="w-full h-full rounded-full object-cover" /> : (userData?.username?.charAt(0).toUpperCase() || 'U')}
           </div>
 
           {isProfileOpen && (
