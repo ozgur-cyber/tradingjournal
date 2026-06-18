@@ -34,7 +34,7 @@ const MobileNav = () => {
       </NavLink>
 
       <NavLink to={userData?.username ? `/profile/${userData.username}` : '/settings'} className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full space-y-1 transition-all ${isActive ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-300'}`}>
-        <User className="w-6 h-6" />
+        {userData?.avatar_url ? <img src={userData.avatar_url} className="w-6 h-6 rounded-full object-cover" /> : <User className="w-6 h-6" />}
         <span className="text-[10px] font-medium">Profil</span>
       </NavLink>
     </nav>

@@ -77,7 +77,7 @@ const Dashboard = () => {
           setChartData(formattedData);
         }
         setHasTrades(true);
-        setAvgRR(totalRR);
+        setAvgRR(rrCount > 0 ? totalRR / rrCount : 0);
         setFilteredStats({ pnl: currentPnl, winRate: (winCount / data.length) * 100, trades: data.length, wins: winCount });
       } else {
         // Mock data for empty state to look beautiful under blur
