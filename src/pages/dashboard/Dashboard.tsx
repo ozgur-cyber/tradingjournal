@@ -5,12 +5,64 @@ import { TrendingUp, TrendingDown, Target, Activity, Zap } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
-  const { userData, user } = useAuthStore();
+  const { userData, user, refreshUserData } = useAuthStore();
   const [chartData, setChartData] = useState<{name: string, pnl: number, tradePnl?: number}[]>([]);
   const [hasTrades, setHasTrades] = useState(true);
   const [avgRR, setAvgRR] = useState(0);
   const [timeFilter, setTimeFilter] = useState<'all' | 'month' | 'week'>('all');
   const [filteredStats, setFilteredStats] = useState({ pnl: 0, winRate: 0, trades: 0, wins: 0 });
+
+  const [accountSize, setAccountSize] = useState(100000);
+  const [customInputVal, setCustomInputVal] = useState('');
+
+  useEffect(() => {
+    if (userData) {
+      const currentSize = userData.account_size || 100000;
+      setAccountSize(currentSize);
+      const standardSizes = [10000, 25000, 50000, 100000, 200000];
+      if (!standardSizes.includes(currentSize)) {
+        setCustomInputVal(String(currentSize));
+      } else {
+        setCustomInputVal('');
+      }
+    }
+  }, [userData]);
+
+  const handleUpdateAccountSize = async (size: number) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ account_size: size })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshUserData();
+    } catch (err) {
+      console.error("Hesap büyüklüğü güncellenemedi:", err);
+    }
+  };
+
+  const handleSaveCustomSize = async () => {
+    const num = Number(customInputVal);
+    if (!customInputVal || isNaN(num) || num <= 0 || !user) return;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ account_size: num })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshUserData();
+    } catch (err) {
+      console.error("Hesap büyüklüğü güncellenemedi:", err);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSaveCustomSize();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -129,6 +181,43 @@ const Dashboard = () => {
           >
             Bu Hafta
           </button>
+        </div>
+      </div>
+
+      {/* Account Size Config Bar */}
+      <div className="glassmorphism p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-border-primary/50">
+        <div>
+          <h4 className="text-sm font-bold text-text-primary">Hesap Büyüklüğü Ayarı (Account Size)</h4>
+          <p className="text-[11px] text-text-secondary mt-0.5">Liderlik tablosundaki (Leaderboard) kar yüzdeniz bu değere göre hesaplanır.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* Preset buttons */}
+          <div className="flex bg-bg-surface-hover rounded-xl p-1 border border-border-primary text-xs">
+            {[10000, 25000, 50000, 100000, 200000].map((size) => (
+              <button
+                key={size}
+                onClick={() => handleUpdateAccountSize(size)}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  accountSize === size ? 'bg-brand-purple text-white shadow-md' : 'text-text-secondary hover:text-white'
+                }`}
+              >
+                ${size >= 1000 ? `${size / 1000}K` : size}
+              </button>
+            ))}
+          </div>
+          {/* Custom Input */}
+          <div className="relative flex items-center">
+            <span className="absolute left-3 text-xs text-text-secondary font-bold">$</span>
+            <input
+              type="number"
+              placeholder="Özel Değer"
+              value={customInputVal}
+              onChange={(e) => setCustomInputVal(e.target.value)}
+              onBlur={handleSaveCustomSize}
+              onKeyDown={handleKeyDown}
+              className="bg-black/30 border border-border-primary rounded-xl py-2 pl-7 pr-3 text-xs w-28 text-white focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none transition-all font-bold"
+            />
+          </div>
         </div>
       </div>
 
