@@ -147,8 +147,8 @@ const Leaderboard = () => {
         const totalPnL = validTrades.reduce((sum, t) => sum + (Number(t.pnl) || 0), 0);
         const totalTrades = validTrades.length;
 
-        // Minimum işlem sayısı kriteri kontrolü
-        if (totalTrades < minTrades) return null;
+        // Hiç işlemi olmayanları liderlik tablosunda gösterme veya minimum işlem kriteri kontrolü
+        if (totalTrades === 0 || totalTrades < minTrades) return null;
 
         const winTrades = validTrades.filter(t => t.pnl > 0).length;
         const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
