@@ -77,26 +77,29 @@ const Trades = () => {
 
       if (error) throw error;
 
-      // Update User Stats in PostgreSQL
-      if (userData && user) {
-        const isWin = tradeToDelete.pnl > 0;
-        const newTotalTrades = Math.max(0, (userData.total_trades || 0) - 1);
-        const newTotalPnL = Number(userData.total_pnl || 0) - Number(tradeToDelete.pnl);
-        const newWinTrades = Math.max(0, (userData.win_trades || 0) - (isWin ? 1 : 0));
-        const newWinRate = newTotalTrades > 0 ? (newWinTrades / newTotalTrades) * 100 : 0;
+      // Recalculate User Stats in PostgreSQL dynamically from trades table
+      const { data: userTradesData } = await supabase
+        .from('trades')
+        .select('pnl, result')
+        .eq('user_id', user.id);
 
-        await supabase
-          .from('users')
-          .update({
-            total_pnl: newTotalPnL,
-            total_trades: newTotalTrades,
-            win_trades: newWinTrades,
-            win_rate: newWinRate
-          })
-          .eq('id', user.id);
-          
-        await refreshUserData();
-      }
+      const allTrades = userTradesData || [];
+      const totalTrades = allTrades.length;
+      const totalPnL = allTrades.reduce((sum, t) => sum + Number(t.pnl || 0), 0);
+      const winTrades = allTrades.filter(t => t.result === 'WIN').length;
+      const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+
+      await supabase
+        .from('users')
+        .update({
+          total_trades: totalTrades,
+          total_pnl: totalPnL,
+          win_trades: winTrades,
+          win_rate: winRate,
+        })
+        .eq('id', user.id);
+        
+      await refreshUserData();
 
       setTrades(trades.filter(t => t.id !== tradeId));
     } catch (error) {

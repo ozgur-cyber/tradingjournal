@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, MessageSquare, Heart, Rocket, UserPlus, UserCheck, Send, TrendingUp, TrendingDown, BarChart3, Target, Clock, Flame, Trophy, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, MessageSquare, Heart, Rocket, UserPlus, UserCheck, Send, TrendingUp, TrendingDown, BarChart3, Target, Clock, Flame, Trophy, Eye, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
@@ -43,7 +43,7 @@ const Social = () => {
       setLoading(true);
       const { data: tradesData, error: tradesError } = await supabase
         .from('trades')
-        .select('*').eq('isPublic', true)
+        .select('*').eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(30);
 

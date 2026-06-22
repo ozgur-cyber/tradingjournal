@@ -125,7 +125,7 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
             strategy,
             notes,
             image_url: finalImageUrl,
-            isPublic: isPublic,
+            is_public: isPublic,
             screenshotURL: finalImageUrl,
             result: isWin ? 'WIN' : isLoss ? 'LOSS' : 'BREAKEVEN'
           }
@@ -133,23 +133,27 @@ const AddTradeModal: React.FC<AddTradeModalProps> = ({ isOpen, onClose, onTradeA
 
       if (dbError) throw dbError;
 
-      // Update User Stats in PostgreSQL
-      if (userData) {
-        const newTotalTrades = (userData.total_trades || 0) + 1;
-        const newTotalPnL = Number(userData.total_pnl || 0) + pnlValue;
-        const newWinTrades = (userData.win_trades || 0) + (isWin ? 1 : 0);
-        const newWinRate = (newWinTrades / newTotalTrades) * 100;
+      // Recalculate User Stats in PostgreSQL dynamically from trades table
+      const { data: userTradesData } = await supabase
+        .from('trades')
+        .select('pnl, result')
+        .eq('user_id', user.id);
 
-        await supabase
-          .from('users')
-          .update({
-            total_trades: newTotalTrades,
-            total_pnl: newTotalPnL,
-            win_trades: newWinTrades,
-            win_rate: newWinRate,
-          })
-          .eq('id', user.id);
-      }
+      const allTrades = userTradesData || [];
+      const totalTrades = allTrades.length;
+      const totalPnL = allTrades.reduce((sum, t) => sum + Number(t.pnl || 0), 0);
+      const winTrades = allTrades.filter(t => t.result === 'WIN').length;
+      const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+
+      await supabase
+        .from('users')
+        .update({
+          total_trades: totalTrades,
+          total_pnl: totalPnL,
+          win_trades: winTrades,
+          win_rate: winRate,
+        })
+        .eq('id', user.id);
 
       onTradeAdded();
       
