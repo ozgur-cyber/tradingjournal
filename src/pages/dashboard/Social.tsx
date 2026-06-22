@@ -9,6 +9,7 @@ import { collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy } from '
 
 interface SocialTrade {
   id: string;
+  user_id: string;
   username: string;
   pair: string;
   direction: string;
@@ -248,7 +249,7 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
       }
     }
   };
-  const { followedUsers, likedTrades, toggleFollow, toggleLike } = useSocialStore();
+  const { followedUsers, likedTrades, toggleFollowDB, toggleLike } = useSocialStore();
   
   const isLiked = likedTrades.includes(trade.id);
   const isFollowing = followedUsers.includes(trade.username);
@@ -264,8 +265,10 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
     toggleLike(trade.id);
   };
 
-  const handleFollow = () => {
-    if (trade.username) toggleFollow(trade.username);
+  const handleFollow = async () => {
+    if (trade.username && userData?.id && trade.user_id) {
+      await toggleFollowDB(userData.id, trade.user_id, trade.username);
+    }
   };
 
   const pnlPercent = trade.entry_price && trade.exit_price 

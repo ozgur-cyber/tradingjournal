@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import MobileNav from './MobileNav';
+import { useAuthStore } from '@/store/authStore';
+import { useSocialStore } from '@/store/socialStore';
 
 const DashboardLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { userData } = useAuthStore();
+  const { fetchFollows } = useSocialStore();
+
+  useEffect(() => {
+    if (userData?.id) {
+      fetchFollows(userData.id);
+    }
+  }, [userData?.id, fetchFollows]);
 
   return (
     <div className="flex h-screen text-text-primary transition-colors duration-300 relative">

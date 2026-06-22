@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, UserCheck, Activity, Target, TrendingUp, DollarSign, Users, Camera, EyeOff } from 'lucide-react';
+import { ArrowLeft, UserPlus, UserCheck, Activity, Target, TrendingUp, DollarSign, Users, Camera, EyeOff, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
 import { useAuthStore } from '@/store/authStore';
@@ -25,6 +25,7 @@ interface RecentTrade {
   pnl: number;
   risk_reward: number;
   created_at: string;
+  image_url?: string;
 }
 
 const PublicProfile = () => {
@@ -34,12 +35,15 @@ const PublicProfile = () => {
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   const { userData, refreshUserData } = useAuthStore();
-  const { followedUsers, toggleFollow } = useSocialStore();
   
   const isOwnProfile = userData?.username === username;
-  const isFollowing = followedUsers.includes(username || '');
 
   useEffect(() => {
     if (username) {
@@ -59,11 +63,54 @@ const PublicProfile = () => {
       if (userError) throw userError;
       setProfile(fetchUserData);
 
-      // 2. Fetch recent public trades
+      // 2. Fetch follower & following stats
       if (fetchUserData) {
+        try {
+          const { count: followers, error: err1 } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', fetchUserData.id);
+          
+          if (err1) throw err1;
+          if (followers !== null) setFollowersCount(followers);
+
+          const { count: following, error: err2 } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', fetchUserData.id);
+          
+          if (err2) throw err2;
+          if (following !== null) setFollowingCount(following);
+
+          if (userData?.id) {
+            const { data: followRel, error: err3 } = await supabase
+              .from('follows')
+              .select('*')
+              .eq('follower_id', userData.id)
+              .eq('following_id', fetchUserData.id)
+              .maybeSingle();
+            
+            if (err3) throw err3;
+            setIsFollowing(!!followRel);
+          } else {
+            setIsFollowing(false);
+          }
+        } catch (dbError) {
+          console.warn("Follows tablosu sorgulanamadı, yerel fallback kullanılacak:", dbError);
+          const fCount = Math.floor((fetchUserData.total_trades || 0) * 1.5);
+          const fIngCount = Math.floor((fetchUserData.total_trades || 0) * 0.8) + 2;
+          const followedUsersList = useSocialStore.getState().followedUsers;
+          const isFollowingLocal = followedUsersList.includes(username || '');
+          
+          setFollowersCount(fCount + (isFollowingLocal ? 1 : 0));
+          setFollowingCount(fIngCount);
+          setIsFollowing(isFollowingLocal);
+        }
+
+        // 3. Fetch recent public trades
         const { data: tradeData, error: tradeError } = await supabase
           .from('trades')
-          .select('id, pair, direction, pnl, created_at, risk_reward')
+          .select('id, pair, direction, pnl, created_at, risk_reward, image_url')
           .eq('user_id', fetchUserData.id)
           .order('created_at', { ascending: false })
           .limit(5);
@@ -78,6 +125,26 @@ const PublicProfile = () => {
       setLoading(false);
     }
   };
+
+  const handleFollowToggle = async () => {
+    if (!userData || !profile) return;
+    
+    const prevFollowing = isFollowing;
+    const prevCount = followersCount;
+    
+    setIsFollowing(!prevFollowing);
+    setFollowersCount(prevFollowing ? prevCount - 1 : prevCount + 1);
+    
+    try {
+      const { toggleFollowDB } = useSocialStore.getState();
+      await toggleFollowDB(userData.id, profile.id, profile.username);
+    } catch (err) {
+      console.error("Takip işlemi başarısız:", err);
+      setIsFollowing(prevFollowing);
+      setFollowersCount(prevCount);
+    }
+  };
+
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !profile) return;
@@ -235,11 +302,11 @@ const PublicProfile = () => {
                 <div className="flex items-center gap-4 mt-3">
                   <div className="flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-brand-purple" />
-                    <span className="text-white font-bold">{Math.floor((profile.total_trades || 0) * 1.5) + (isFollowing ? 1 : 0)}</span>
+                    <span className="text-white font-bold">{followersCount}</span>
                     <span className="text-text-secondary text-sm">Takipçi</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-white font-bold">{Math.floor((profile.total_trades || 0) * 0.8) + 2}</span>
+                    <span className="text-white font-bold">{followingCount}</span>
                     <span className="text-text-secondary text-sm">Takip Edilen</span>
                   </div>
                 </div>
@@ -248,7 +315,7 @@ const PublicProfile = () => {
 
             {!isOwnProfile && (
               <button 
-                onClick={() => toggleFollow(profile.username)}
+                onClick={handleFollowToggle}
                 className={`px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all shadow-lg ${
                   isFollowing 
                     ? 'bg-bg-surface-hover text-brand-success border border-brand-success/30 hover:bg-bg-surface' 
@@ -321,19 +388,58 @@ const PublicProfile = () => {
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <p className={`font-bold ${trade.pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
-                    {!profile.show_pnl && !isOwnProfile ? "***.**$" : `${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}$`}
-                  </p>
-                  <p className="text-xs text-text-secondary">
-                    {new Date(trade.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                  </p>
+                <div className="flex items-center gap-4">
+                  {trade.image_url ? (
+                    <button 
+                      onClick={() => setSelectedImage(trade.image_url || null)} 
+                      className="inline-block relative group/img shrink-0"
+                      title="Görseli büyüt"
+                    >
+                      <img 
+                        src={trade.image_url} 
+                        alt="Trade Thumbnail" 
+                        className="w-10 h-10 object-cover rounded-lg border border-border-primary group-hover/img:border-brand-purple transition-all shadow-sm"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity">
+                        <ImageIcon className="w-4 h-4 text-white" />
+                      </div>
+                    </button>
+                  ) : null}
+                  
+                  <div className="text-right min-w-[70px]">
+                    <p className={`font-bold ${trade.pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
+                      {!profile.show_pnl && !isOwnProfile ? "***.**$" : `${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}$`}
+                    </p>
+                    <p className="text-xs text-text-secondary">
+                      {new Date(trade.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedImage(null)}>
+          <div className="relative max-w-4xl w-full flex items-center justify-center">
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 p-2 text-white hover:text-gray-300 bg-black/50 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img 
+              src={selectedImage} 
+              alt="Trade Screenshot" 
+              className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/10" 
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

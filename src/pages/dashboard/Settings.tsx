@@ -10,6 +10,8 @@ const Settings = () => {
   
   // Profile State
   const [username, setUsername] = useState(userData?.username || '');
+  const [accountSize, setAccountSize] = useState(userData?.account_size || 100000);
+  const [countryCode, setCountryCode] = useState(userData?.country_code || 'TR');
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -68,10 +70,15 @@ const Settings = () => {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ username })
+        .update({ 
+          username,
+          account_size: Number(accountSize),
+          country_code: countryCode
+        })
         .eq('id', user.id);
         
       if (error) throw error;
+      await refreshUserData();
       setProfileMessage({ type: 'success', text: 'Profil bilgileriniz başarıyla güncellendi!' });
     } catch (err: any) {
       setProfileMessage({ type: 'error', text: err.message || 'Bir hata oluştu.' });
@@ -131,6 +138,9 @@ const Settings = () => {
     if (userData) {
       setPublicProfile(userData.is_public ?? true);
       setShowPnL(userData.show_pnl ?? true);
+      setUsername(userData.username || '');
+      setAccountSize(userData.account_size || 100000);
+      setCountryCode(userData.country_code || 'TR');
     }
   }, [userData]);
 
@@ -342,6 +352,46 @@ const Settings = () => {
                     placeholder="Ekranda görünecek isminiz"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Hesap Büyüklüğü (Account Size)</label>
+                    <select
+                      value={accountSize}
+                      onChange={(e) => setAccountSize(Number(e.target.value))}
+                      className="w-full bg-bg-primary border border-border-primary rounded-lg p-3 text-text-primary focus:border-brand-purple/50 outline-none transition-colors cursor-pointer"
+                    >
+                      <option value={10000}>10K ($10,000)</option>
+                      <option value={25000}>25K ($25,000)</option>
+                      <option value={50000}>50K ($50,000)</option>
+                      <option value={100000}>100K ($100,000)</option>
+                      <option value={200000}>200K ($200,000)</option>
+                      <option value={400000}>400K ($400,000)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Ülke (Country)</label>
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="w-full bg-bg-primary border border-border-primary rounded-lg p-3 text-text-primary focus:border-brand-purple/50 outline-none transition-colors cursor-pointer"
+                    >
+                      <option value="TR">Türkiye (TR)</option>
+                      <option value="US">Amerika Birleşik Devletleri (US)</option>
+                      <option value="GB">Birleşik Krallık (GB)</option>
+                      <option value="DE">Almanya (DE)</option>
+                      <option value="FR">Fransa (FR)</option>
+                      <option value="AE">Birleşik Arap Emirlikleri (AE)</option>
+                      <option value="SK">Slovakya (SK)</option>
+                      <option value="MY">Malezya (MY)</option>
+                      <option value="IT">İtalya (IT)</option>
+                      <option value="ES">İspanya (ES)</option>
+                      <option value="NL">Hollanda (NL)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <button 
                   type="submit"
                   disabled={profileLoading}
