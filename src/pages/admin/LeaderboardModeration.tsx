@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Trophy, ShieldAlert, Search, UserX, UserCheck, AlertTriangle } from 'lucide-react';
+import { Trophy, ShieldAlert, Search, UserX, UserCheck, AlertTriangle, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 import { useAuthStore } from '@/store/authStore';
 
@@ -405,7 +405,10 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Max PnL */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Puanlama için Üst Kâr Sınırı ($)</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Maksimum Kâr Sınırı ($)</label>
+                    <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Bu limite ulaşan veya geçen traderlar kâr puanlamasından 100 tam puan alır. Örn: 10,000$ yazılırsa, 10,000$ ve üzeri kârı olan herkes bu kriterden tam puan alır." />
+                  </div>
                   <input
                     type="number"
                     value={maxPnL}
@@ -415,12 +418,14 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
                     min={1}
                     disabled={!isFounder}
                   />
-                  <p className="text-[10px] text-text-secondary">Bu sınıra ulaşan veya geçen traderlar kâr puanlamasından 100 tam puan alır. Örn: 10,000$ yazılırsa, 10,000$ ve üzeri kârı olan herkes bu kriterden tam puan alır.</p>
                 </div>
 
                 {/* Min Trades */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Sıralama için Gerekli En Az İşlem Sayısı</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Sıralama için En Az İşlem Sayısı</label>
+                    <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Bir traderın sıralamaya girebilmesi için yapması gereken en az işlem sayısıdır. 0 yapılırsa her işlem sayısı kabul edilir." />
+                  </div>
                   <input
                     type="number"
                     value={minTrades}
@@ -430,13 +435,15 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
                     min={0}
                     disabled={!isFounder}
                   />
-                  <p className="text-[10px] text-text-secondary">Bir traderın sıralamaya girebilmesi için yapması gereken en az işlem sayısıdır. 0 yapılırsa her işlem sayısı kabul edilir.</p>
                 </div>
 
                 {/* PnL Weight */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Toplam Kâr Etkisi (%)</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Kâr Puanı Etkisi</label>
+                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Toplam kâr miktarının (PnL) genel skora yüzde kaç etki edeceğini belirler." />
+                    </div>
                     <span className="text-xs font-bold text-white">{Math.round(pnlWeight * 100)}%</span>
                   </div>
                   <input
@@ -449,13 +456,15 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
                     className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!isFounder}
                   />
-                  <p className="text-[10px] text-text-secondary">Kullanıcının elde ettiği toplam kâr miktarının (PnL) genel skora yüzde kaç etki edeceğini belirler.</p>
                 </div>
 
                 {/* Win Rate Weight */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Başarı Oranı Etkisi (%)</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Başarı Oranı Etkisi</label>
+                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Kazanılan (kârlı kapatılan) işlemlerin toplam işlem sayısına oranının (Win Rate) genel skora yüzde kaç etki edeceğini belirler." />
+                    </div>
                     <span className="text-xs font-bold text-white">{Math.round(winRateWeight * 100)}%</span>
                   </div>
                   <input
@@ -468,13 +477,15 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
                     className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!isFounder}
                   />
-                  <p className="text-[10px] text-text-secondary">Kazanılan (kârlı kapatılan) işlemlerin toplam işlem sayısına oranının (Win Rate) genel skora yüzde kaç etki edeceğini belirler.</p>
                 </div>
 
                 {/* Risk Reward Weight */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Risk/Kazanç Etkisi (%)</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Risk/Kazanç Etkisi</label>
+                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="İşlemlerdeki ortalama Risk/Kazanç (R:R) oranının genel skora yüzde kaç etki edeceğini belirler." />
+                    </div>
                     <span className="text-xs font-bold text-white">{Math.round(rrWeight * 100)}%</span>
                   </div>
                   <input
@@ -487,13 +498,15 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
                     className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!isFounder}
                   />
-                  <p className="text-[10px] text-text-secondary">İşlemlerdeki ortalama Risk/Kazanç (R:R) oranının genel skora yüzde kaç etki edeceğini belirler.</p>
                 </div>
 
                 {/* Consistency Weight */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">İşlerlik/İstikrar Etkisi (%)</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">İstikrar Etkisi</label>
+                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Trader'ın işlem yapma sıklığı ve aktifliğinin genel skora yüzde kaç etki edeceğini belirler." />
+                    </div>
                     <span className="text-xs font-bold text-white">{Math.round(consistencyWeight * 100)}%</span>
                   </div>
                   <input
@@ -506,7 +519,6 @@ ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
                     className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!isFounder}
                   />
-                  <p className="text-[10px] text-text-secondary">Trader'ın işlem yapma sıklığı ve istikrarının genel skora yüzde kaç etki edeceğini belirler.</p>
                 </div>
               </div>
 
