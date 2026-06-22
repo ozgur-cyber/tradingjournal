@@ -120,30 +120,17 @@ const LeaderboardModeration = () => {
     setDbError(null);
     setSaveSuccess(false);
 
-    const sum = Number((pnlWeight + winRateWeight + rrWeight + consistencyWeight).toFixed(4));
-    if (sum !== 1.0) {
-      alert(`Etki ağırlıklarının toplamı tam olarak %100 olmalıdır. Şu anki toplam: %${Math.round(sum * 100)} (Toplam Kâr: %${Math.round(pnlWeight * 100)}, Başarı Oranı: %${Math.round(winRateWeight * 100)}, Risk/Kazanç: %${Math.round(rrWeight * 100)}, İstikrar: %${Math.round(consistencyWeight * 100)})`);
-      setSavingRules(false);
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('platform_settings')
         .update({
-          max_pnl: maxPnL,
-          pnl_weight: pnlWeight,
-          win_rate_weight: winRateWeight,
-          rr_weight: rrWeight,
-          consistency_weight: consistencyWeight,
-          min_trades: minTrades,
-          updated_at: new Date().toISOString()
+          min_trades: minTrades
         })
         .eq('id', 1);
 
       if (error) {
         console.error("Kurallar kaydedilirken hata:", error);
-        setDbError(`Kaydetme başarısız: ${error.message}. Tablo kolonları eksik olabilir. Lütfen SQL migrasyonunu çalıştırdığınızdan emin olun.`);
+        setDbError(`Kaydetme başarısız: ${error.message}. Lütfen veritabanı bağlantısını kontrol edin.`);
       } else {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
@@ -343,18 +330,11 @@ const LeaderboardModeration = () => {
       ) : (
         <div className="glassmorphism rounded-2xl border border-border-primary p-6 md:p-8 space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-white">Ağırlıklı Puan Formülü Ayarları</h3>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-              Number((pnlWeight + winRateWeight + rrWeight + consistencyWeight).toFixed(4)) === 1.0
-                ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
-                : 'bg-brand-danger/20 text-brand-danger border border-brand-danger/30 animate-pulse'
-            }`}>
-              Toplam Ağırlık: {Math.round((pnlWeight + winRateWeight + rrWeight + consistencyWeight) * 100)}%
-            </span>
+            <h3 className="text-xl font-bold text-white">Liderlik Tablosu Sıralama Kuralları</h3>
           </div>
 
           <p className="text-text-secondary text-sm">
-            Şampiyonlar Ligi sıralamasını belirleyen puanlama formülü ağırlıklarını buradan düzenleyebilirsiniz. Değişiklik yapabilmek için tüm etkilerin toplamının tam olarak %100 olması gerekmektedir.
+            Şampiyonlar Ligi sıralaması, kullanıcıların toplam kâr miktarına (Profit) göre yapılmaktadır. Sıralama listesini düzenlemek için aşağıdaki kuralı belirleyebilirsiniz.
           </p>
 
           {!isFounder && (
@@ -370,23 +350,9 @@ const LeaderboardModeration = () => {
           )}
 
           {dbError && (
-            <div className="p-4 bg-brand-danger/10 border border-brand-danger/30 rounded-xl text-sm text-brand-danger space-y-3">
-              <div className="flex gap-2 font-semibold items-center">
-                <ShieldAlert className="w-5 h-5 animate-bounce" />
-                <span>Veritabanı Uyumsuzluğu / Hata</span>
-              </div>
-              <p className="text-text-secondary text-xs">{dbError}</p>
-              <div className="bg-black/40 p-3 rounded-lg font-mono text-xs overflow-x-auto text-white select-all">
-{`ALTER TABLE platform_settings 
-ADD COLUMN IF NOT EXISTS max_pnl NUMERIC DEFAULT 10000,
-ADD COLUMN IF NOT EXISTS pnl_weight NUMERIC DEFAULT 0.40,
-ADD COLUMN IF NOT EXISTS win_rate_weight NUMERIC DEFAULT 0.25,
-ADD COLUMN IF NOT EXISTS rr_weight NUMERIC DEFAULT 0.20,
-ADD COLUMN IF NOT EXISTS consistency_weight NUMERIC DEFAULT 0.15,
-ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`}
-              </div>
-              <p className="text-[10px] text-text-secondary">Bu SQL komutunu Supabase Dashboard &gt; SQL Editor üzerinden çalıştırarak veritabanınızı güncelleyebilirsiniz.</p>
+            <div className="p-4 bg-brand-danger/10 border border-brand-danger/30 rounded-xl text-sm text-brand-danger">
+              <p className="font-semibold text-white">Veritabanı Hatası</p>
+              <p className="text-xs text-text-secondary mt-1">{dbError}</p>
             </div>
           )}
 
@@ -403,24 +369,7 @@ ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`}
             </div>
           ) : (
             <form onSubmit={saveRules} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Max PnL */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Maksimum Kâr Sınırı ($)</label>
-                    <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Bu limite ulaşan veya geçen traderlar kâr puanlamasından 100 tam puan alır. Örn: 10,000$ yazılırsa, 10,000$ ve üzeri kârı olan herkes bu kriterden tam puan alır." />
-                  </div>
-                  <input
-                    type="number"
-                    value={maxPnL}
-                    onChange={(e) => setMaxPnL(Math.max(1, Number(e.target.value)))}
-                    className="w-full bg-black/30 border border-border-primary rounded-xl py-3 px-4 text-white focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    required
-                    min={1}
-                    disabled={!isFounder}
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 gap-6 max-w-md">
                 {/* Min Trades */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
@@ -434,90 +383,6 @@ ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`}
                     className="w-full bg-black/30 border border-border-primary rounded-xl py-3 px-4 text-white focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                     min={0}
-                    disabled={!isFounder}
-                  />
-                </div>
-
-                {/* PnL Weight */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Kâr Puanı Etkisi</label>
-                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Toplam kâr miktarının (PnL) genel skora yüzde kaç etki edeceğini belirler." />
-                    </div>
-                    <span className="text-xs font-bold text-white">{Math.round(pnlWeight * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={pnlWeight}
-                    onChange={(e) => setPnlWeight(Number(e.target.value))}
-                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!isFounder}
-                  />
-                </div>
-
-                {/* Win Rate Weight */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Başarı Oranı Etkisi</label>
-                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Kazanılan (kârlı kapatılan) işlemlerin toplam işlem sayısına oranının (Win Rate) genel skora yüzde kaç etki edeceğini belirler." />
-                    </div>
-                    <span className="text-xs font-bold text-white">{Math.round(winRateWeight * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={winRateWeight}
-                    onChange={(e) => setWinRateWeight(Number(e.target.value))}
-                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!isFounder}
-                  />
-                </div>
-
-                {/* Risk Reward Weight */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Risk/Kazanç Etkisi</label>
-                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="İşlemlerdeki ortalama Risk/Kazanç (R:R) oranının genel skora yüzde kaç etki edeceğini belirler." />
-                    </div>
-                    <span className="text-xs font-bold text-white">{Math.round(rrWeight * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={rrWeight}
-                    onChange={(e) => setRrWeight(Number(e.target.value))}
-                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!isFounder}
-                  />
-                </div>
-
-                {/* Consistency Weight */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">İstikrar Etkisi</label>
-                      <Info className="w-3.5 h-3.5 text-text-secondary cursor-help" title="Trader'ın işlem yapma sıklığı ve aktifliğinin genel skora yüzde kaç etki edeceğini belirler." />
-                    </div>
-                    <span className="text-xs font-bold text-white">{Math.round(consistencyWeight * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={consistencyWeight}
-                    onChange={(e) => setConsistencyWeight(Number(e.target.value))}
-                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!isFounder}
                   />
                 </div>

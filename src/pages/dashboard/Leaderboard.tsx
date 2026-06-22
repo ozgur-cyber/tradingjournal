@@ -219,8 +219,8 @@ const Leaderboard = () => {
         } as LeaderboardUser;
       }).filter(Boolean) as LeaderboardUser[];
 
-      // Ağırlıklı skora göre sırala
-      detailedUsers.sort((a, b) => (b.weighted_score || b.total_pnl) - (a.weighted_score || a.total_pnl));
+      // Kâra göre sırala (Profit / PnL descending)
+      detailedUsers.sort((a, b) => b.total_pnl - a.total_pnl);
       
       const rankedUsers = detailedUsers.map((user, idx) => ({
         ...user,

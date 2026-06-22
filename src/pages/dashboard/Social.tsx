@@ -397,27 +397,27 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
           {showDetails && (
             <div className="mt-3 pt-3 border-t border-border-primary animate-fade-in">
               <div className="grid grid-cols-3 gap-4 mb-4">
-                {trade.entry_price && (
+                {trade.entry_price !== undefined && trade.entry_price !== null && (
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Giriş Fiyatı</p>
-                    <p className="text-sm font-bold text-text-primary">${trade.entry_price}</p>
+                    <p className="text-sm font-bold text-text-primary">${String(trade.entry_price)}</p>
                   </div>
                 )}
-                {trade.exit_price && (
+                {trade.exit_price !== undefined && trade.exit_price !== null && (
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Çıkış Fiyatı</p>
-                    <p className="text-sm font-bold text-text-primary">${trade.exit_price}</p>
+                    <p className="text-sm font-bold text-text-primary">${String(trade.exit_price)}</p>
                   </div>
                 )}
-                {trade.lot_size && (
+                {trade.lot_size !== undefined && trade.lot_size !== null && (
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold mb-1">Lot Büyüklüğü</p>
-                    <p className="text-sm font-bold text-text-primary">{trade.lot_size}</p>
+                    <p className="text-sm font-bold text-text-primary">{String(trade.lot_size)}</p>
                   </div>
                 )}
               </div>
               
-              {trade.image_url && (
+              {trade.image_url && typeof trade.image_url === 'string' && (
                 <div className="mt-2 rounded-xl overflow-hidden border border-border-primary">
                   <a href={trade.image_url} target="_blank" rel="noreferrer"><img src={trade.image_url} alt="Trade Screenshot" className="w-full h-auto object-cover max-h-[400px] hover:scale-[1.02] transition-transform duration-500 cursor-zoom-in" title="Büyütmek için tıkla" /></a>
                 </div>
