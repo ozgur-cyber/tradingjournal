@@ -58,6 +58,34 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
+
+      // Ağırlıkları veritabanından çek (varsayılan değerler yedek olarak hazır)
+      let maxPnL = 10000;
+      let pnlWeight = 0.40;
+      let winRateWeight = 0.25;
+      let rrWeight = 0.20;
+      let consistencyWeight = 0.15;
+      let minTrades = 0;
+
+      try {
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('platform_settings')
+          .select('max_pnl, pnl_weight, win_rate_weight, rr_weight, consistency_weight, min_trades')
+          .eq('id', 1)
+          .single();
+
+        if (!settingsError && settingsData) {
+          if (settingsData.max_pnl !== null && settingsData.max_pnl !== undefined) maxPnL = Number(settingsData.max_pnl);
+          if (settingsData.pnl_weight !== null && settingsData.pnl_weight !== undefined) pnlWeight = Number(settingsData.pnl_weight);
+          if (settingsData.win_rate_weight !== null && settingsData.win_rate_weight !== undefined) winRateWeight = Number(settingsData.win_rate_weight);
+          if (settingsData.rr_weight !== null && settingsData.rr_weight !== undefined) rrWeight = Number(settingsData.rr_weight);
+          if (settingsData.consistency_weight !== null && settingsData.consistency_weight !== undefined) consistencyWeight = Number(settingsData.consistency_weight);
+          if (settingsData.min_trades !== null && settingsData.min_trades !== undefined) minTrades = Number(settingsData.min_trades);
+        }
+      } catch (err) {
+        console.warn("Platform ayarları çekilemedi, varsayılan kurallar kullanılacak:", err);
+      }
+
       // Önce banlı/gizlenmiş kullanıcıları çek
       const { data: excData } = await supabase.from('leaderboard_exclusions').select('user_id');
       const excludedIds = excData?.map(e => e.user_id) || [];
@@ -65,7 +93,7 @@ const Leaderboard = () => {
       // Tüm kullanıcıları çek
       const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('id, username, avatar_url');
+        .select('id, username, avatar_url, is_public');
         
       if (usersError) throw usersError;
 
@@ -92,22 +120,19 @@ const Leaderboard = () => {
 
       if (!usersData) return;
 
-      const validUsers = usersData.filter(u => !excludedIds.includes(u.id));
+      const validUsers = usersData.filter(u => !excludedIds.includes(u.id) && u.is_public !== false);
 
-      const detailedUsers = validUsers.map(user => {
-        const userId = user.id;
+      const detailedUsers = validUsers.map(u => {
+        const userId = u.id;
         const userTrades = userTradesMap.get(userId) || [];
-        const user = usersData?.find(u => u.id === userId);
-        const userTrades = userTradesMap.get(userId) || [];
-        
-        
-        
-        // if (userTrades.length === 0) return null; // We allow 0 trades to show up as well if they somehow get here
-
         const validTrades = userTrades;
         
         const totalPnL = validTrades.reduce((sum, t) => sum + (Number(t.pnl) || 0), 0);
         const totalTrades = validTrades.length;
+
+        // Minimum işlem sayısı kriteri kontrolü
+        if (totalTrades < minTrades) return null;
+
         const winTrades = validTrades.filter(t => t.pnl > 0).length;
         const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
         
@@ -128,26 +153,24 @@ const Leaderboard = () => {
         const bestTrade = pnls.length > 0 ? Math.max(...pnls) : 0;
         const worstTrade = pnls.length > 0 ? Math.min(...pnls) : 0;
 
-        
         // Weighted Score Hesaplaması
-        const maxPnL = 10000; // normalize
-        const pnlScore = Math.min((totalPnL / maxPnL) * 100, 100) * 0.40;
-        const winRateScore = winRate * 0.25;
-        const rrScore = Math.min(avgRR * 10, 100) * 0.20;
-        const consistencyScore = Math.min(totalTrades * 5, 100) * 0.15;
+        const pnlScore = Math.min((totalPnL / maxPnL) * 100, 100) * pnlWeight;
+        const winRateScore = winRate * winRateWeight;
+        const rrScore = Math.min(avgRR * 10, 100) * rrWeight;
+        const consistencyScore = Math.min(totalTrades * 5, 100) * consistencyWeight;
         const weightedScore = pnlScore + winRateScore + rrScore + consistencyScore;
 
         const recentTrend = userTrades.slice(0, 5).map(t => t.pnl > 0 ? 'W' : t.pnl < 0 ? 'L' : 'B').reverse() as ('W' | 'L' | 'B')[];
 
         return { 
           id: userId,
-          username: user?.username || 'Trader',
-          avatar_url: user?.avatar_url,
+          username: u.username || 'Trader',
+          avatar_url: u.avatar_url,
           total_pnl: totalPnL,
           weighted_score: weightedScore,
           win_rate: winRate,
           total_trades: totalTrades,
-          average_rr: totalRR,
+          average_rr: avgRR,
           top_pair: topPair,
           best_trade: bestTrade,
           worst_trade: worstTrade,

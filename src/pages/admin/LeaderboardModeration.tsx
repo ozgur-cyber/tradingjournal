@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, ShieldAlert, Search, UserX, UserCheck, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 import { useAuthStore } from '@/store/authStore';
@@ -22,8 +22,22 @@ const LeaderboardModeration = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  // Kural Ayarları State'leri
+  const [activeTab, setActiveTab] = useState<'users' | 'rules'>('users');
+  const [maxPnL, setMaxPnL] = useState(10000);
+  const [pnlWeight, setPnlWeight] = useState(0.40);
+  const [winRateWeight, setWinRateWeight] = useState(0.25);
+  const [rrWeight, setRrWeight] = useState(0.20);
+  const [consistencyWeight, setConsistencyWeight] = useState(0.15);
+  const [minTrades, setMinTrades] = useState(0);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  const [savingRules, setSavingRules] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   useEffect(() => {
     fetchUsers();
+    fetchRules();
   }, []);
 
   const fetchUsers = async () => {
@@ -59,6 +73,81 @@ const LeaderboardModeration = () => {
       console.error("Moderasyon verisi getirilirken hata:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRules = async () => {
+    try {
+      setRulesLoading(true);
+      setDbError(null);
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('max_pnl, pnl_weight, win_rate_weight, rr_weight, consistency_weight, min_trades')
+        .eq('id', 1)
+        .single();
+
+      if (error) {
+        console.error("Platform ayarları yüklenemedi:", error);
+        if (error.code === 'PGRST204' || error.message?.includes('column') || error.message?.includes('relation')) {
+          setDbError("Veritabanında platform_settings tablosu veya gerekli kolonlar bulunamadı. Lütfen Supabase SQL editöründe gerekli migrasyon kodunu çalıştırın.");
+        } else {
+          setDbError(`Platform ayarları yüklenirken hata oluştu: ${error.message}`);
+        }
+      } else if (data) {
+        if (data.max_pnl !== null) setMaxPnL(Number(data.max_pnl));
+        if (data.pnl_weight !== null) setPnlWeight(Number(data.pnl_weight));
+        if (data.win_rate_weight !== null) setWinRateWeight(Number(data.win_rate_weight));
+        if (data.rr_weight !== null) setRrWeight(Number(data.rr_weight));
+        if (data.consistency_weight !== null) setConsistencyWeight(Number(data.consistency_weight));
+        if (data.min_trades !== null) setMinTrades(Number(data.min_trades));
+      }
+    } catch (err: any) {
+      console.error(err);
+      setDbError(err.message || "Bilinmeyen bir hata oluştu.");
+    } finally {
+      setRulesLoading(false);
+    }
+  };
+
+  const saveRules = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingRules(true);
+    setDbError(null);
+    setSaveSuccess(false);
+
+    const sum = Number((pnlWeight + winRateWeight + rrWeight + consistencyWeight).toFixed(4));
+    if (sum !== 1.0) {
+      alert(`Ağırlıkların toplamı tam olarak 1.0 (100%) olmalıdır. Mevcut toplam: ${sum * 100}% (Kâr: ${Math.round(pnlWeight * 100)}%, WR: ${Math.round(winRateWeight * 100)}%, RR: ${Math.round(rrWeight * 100)}%, İstikrar: ${Math.round(consistencyWeight * 100)}%)`);
+      setSavingRules(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('platform_settings')
+        .update({
+          max_pnl: maxPnL,
+          pnl_weight: pnlWeight,
+          win_rate_weight: winRateWeight,
+          rr_weight: rrWeight,
+          consistency_weight: consistencyWeight,
+          min_trades: minTrades,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+
+      if (error) {
+        console.error("Kurallar kaydedilirken hata:", error);
+        setDbError(`Kaydetme başarısız: ${error.message}. Tablo kolonları eksik olabilir. Lütfen SQL migrasyonunu çalıştırdığınızdan emin olun.`);
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setDbError(err.message || "Bilinmeyen bir hata oluştu.");
+    } finally {
+      setSavingRules(false);
     }
   };
 
@@ -116,109 +205,308 @@ const LeaderboardModeration = () => {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">Leaderboard Moderasyon</h2>
-          <p className="text-text-secondary text-sm">Puan silme ve soft-exclusion mekanizmaları.</p>
+          <p className="text-text-secondary text-sm">Puan silme, soft-exclusion mekanizmaları ve sıralama kuralları.</p>
         </div>
       </div>
 
-      <div className="bg-bg-surface-hover border border-brand-danger/30 rounded-xl p-4 flex gap-3 text-sm text-text-primary">
-        <AlertTriangle className="w-5 h-5 text-brand-danger shrink-0" />
-        <p>Buradan engellenen kullanıcılar platformu kullanmaya ve işlem yapmaya devam edebilirler ancak <strong className="text-brand-danger">Şampiyonlar Ligi (Leaderboard) sıralamasında asla görünmezler.</strong> Ödül avcılarını ve kural ihlalcilerini elemek için kullanın.</p>
+      {/* Tab Switcher */}
+      <div className="flex gap-4 border-b border-border-primary pb-px mb-6">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all px-2 ${
+            activeTab === 'users'
+              ? 'border-brand-purple text-brand-purple'
+              : 'border-transparent text-text-secondary hover:text-white'
+          }`}
+        >
+          Trader Listesi (Sıralama Yönetimi)
+        </button>
+        <button
+          onClick={() => setActiveTab('rules')}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all px-2 ${
+            activeTab === 'rules'
+              ? 'border-brand-purple text-brand-purple'
+              : 'border-transparent text-text-secondary hover:text-white'
+          }`}
+        >
+          Leaderboard Skor Kuralları
+        </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-          <input 
-            type="text" 
-            placeholder="Trader ara..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/30 border border-border-primary rounded-xl py-2.5 pl-10 pr-4 text-sm focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none text-white transition-all"
-          />
-        </div>
-      </div>
-
-      <div className="bg-black/20 border border-border-primary rounded-2xl overflow-hidden">
-        {loading ? (
-          <div className="p-10 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+      {activeTab === 'users' ? (
+        <>
+          <div className="bg-bg-surface-hover border border-brand-danger/30 rounded-xl p-4 flex gap-3 text-sm text-text-primary">
+            <AlertTriangle className="w-5 h-5 text-brand-danger shrink-0" />
+            <p>Buradan engellenen kullanıcılar platformu kullanmaya ve işlem yapmaya devam edebilirler ancak <strong className="text-brand-danger">Şampiyonlar Ligi (Leaderboard) sıralamasında asla görünmezler.</strong> Ödül avcılarını ve kural ihlalcilerini elemek için kullanın.</p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr className="bg-bg-surface-hover border-b border-border-primary text-xs uppercase tracking-wider text-text-secondary">
-                  <th className="p-4 font-semibold">Trader</th>
-                  <th className="p-4 font-semibold">Toplam İşlem</th>
-                  <th className="p-4 font-semibold text-right">Durum</th>
-                  <th className="p-4 font-semibold text-right">Aksiyon</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-primary">
-                {filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-8 text-center text-text-secondary">Sonuç bulunamadı.</td>
-                  </tr>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-brand-surface border border-border-primary flex items-center justify-center font-bold text-white">
-                            {user.username?.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-bold text-white">{user.username}</p>
-                            <p className="text-xs text-text-secondary">{isFounder ? user.email : maskEmail(user.email)}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="font-medium text-white">{user.total_trades} İşlem</span>
-                      </td>
-                      <td className="p-4 text-right">
-                        {user.is_excluded ? (
-                          <div className="inline-flex flex-col items-end">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-brand-danger/20 text-brand-danger border border-brand-danger/30">
-                              <ShieldAlert className="w-3 h-3" /> Engelli (Gizli)
-                            </span>
-                            <span className="text-[10px] text-text-secondary mt-1 max-w-[150px] truncate" title={user.exclusion_reason}>
-                              Sebep: {user.exclusion_reason}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-brand-success/20 text-brand-success border border-brand-success/30">
-                            Temiz
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={() => toggleExclusion(user)}
-                          disabled={processingId === user.id}
-                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
-                            user.is_excluded 
-                              ? 'bg-brand-success/10 text-brand-success border border-brand-success/30 hover:bg-brand-success/20'
-                              : 'bg-brand-danger/10 text-brand-danger border border-brand-danger/30 hover:bg-brand-danger/20'
-                          }`}
-                        >
-                          {processingId === user.id ? (
-                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></span>
-                          ) : user.is_excluded ? (
-                            <><UserCheck className="w-4 h-4" /> Geri Al</>
-                          ) : (
-                            <><UserX className="w-4 h-4" /> Sıralamadan At</>
-                          )}
-                        </button>
-                      </td>
+
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <input 
+                type="text" 
+                placeholder="Trader ara..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-black/30 border border-border-primary rounded-xl py-2.5 pl-10 pr-4 text-sm focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none text-white transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="bg-black/20 border border-border-primary rounded-2xl overflow-hidden">
+            {loading ? (
+              <div className="p-10 flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="bg-bg-surface-hover border-b border-border-primary text-xs uppercase tracking-wider text-text-secondary">
+                      <th className="p-4 font-semibold">Trader</th>
+                      <th className="p-4 font-semibold">Toplam İşlem</th>
+                      <th className="p-4 font-semibold text-right">Durum</th>
+                      <th className="p-4 font-semibold text-right">Aksiyon</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-border-primary">
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-text-secondary">Sonuç bulunamadı.</td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-brand-surface border border-border-primary flex items-center justify-center font-bold text-white">
+                                {user.username?.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-bold text-white">{user.username}</p>
+                                <p className="text-xs text-text-secondary">{isFounder ? user.email : maskEmail(user.email)}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-medium text-white">{user.total_trades} İşlem</span>
+                          </td>
+                          <td className="p-4 text-right">
+                            {user.is_excluded ? (
+                              <div className="inline-flex flex-col items-end">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-brand-danger/20 text-brand-danger border border-brand-danger/30">
+                                  <ShieldAlert className="w-3 h-3" /> Engelli (Gizli)
+                                </span>
+                                <span className="text-[10px] text-text-secondary mt-1 max-w-[150px] truncate" title={user.exclusion_reason}>
+                                  Sebep: {user.exclusion_reason}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-brand-success/20 text-brand-success border border-brand-success/30">
+                                Temiz
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => toggleExclusion(user)}
+                              disabled={processingId === user.id}
+                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
+                                user.is_excluded 
+                                  ? 'bg-brand-success/10 text-brand-success border border-brand-success/30 hover:bg-brand-success/20'
+                                  : 'bg-brand-danger/10 text-brand-danger border border-brand-danger/30 hover:bg-brand-danger/20'
+                              }`}
+                            >
+                              {processingId === user.id ? (
+                                <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></span>
+                              ) : user.is_excluded ? (
+                                <><UserCheck className="w-4 h-4" /> Geri Al</>
+                              ) : (
+                                <><UserX className="w-4 h-4" /> Sıralamadan At</>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <div className="glassmorphism rounded-2xl border border-border-primary p-6 md:p-8 space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-white">Ağırlıklı Puan Formülü Ayarları</h3>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+              Number((pnlWeight + winRateWeight + rrWeight + consistencyWeight).toFixed(4)) === 1.0
+                ? 'bg-brand-success/20 text-brand-success border border-brand-success/30'
+                : 'bg-brand-danger/20 text-brand-danger border border-brand-danger/30 animate-pulse'
+            }`}>
+              Toplam Ağırlık: {Math.round((pnlWeight + winRateWeight + rrWeight + consistencyWeight) * 100)}%
+            </span>
+          </div>
+
+          <p className="text-text-secondary text-sm">
+            Şampiyonlar ligi sıralamasında kullanılacak ağırlıklı puan hesaplama formülünü buradan düzenleyebilirsiniz. Tüm ağırlık katsayılarının toplamı 1.0 (100%) olmalıdır.
+          </p>
+
+          {dbError && (
+            <div className="p-4 bg-brand-danger/10 border border-brand-danger/30 rounded-xl text-sm text-brand-danger space-y-3">
+              <div className="flex gap-2 font-semibold items-center">
+                <ShieldAlert className="w-5 h-5 animate-bounce" />
+                <span>Veritabanı Uyumsuzluğu / Hata</span>
+              </div>
+              <p className="text-text-secondary text-xs">{dbError}</p>
+              <div className="bg-black/40 p-3 rounded-lg font-mono text-xs overflow-x-auto text-white select-all">
+{`ALTER TABLE platform_settings 
+ADD COLUMN IF NOT EXISTS max_pnl NUMERIC DEFAULT 10000,
+ADD COLUMN IF NOT EXISTS pnl_weight NUMERIC DEFAULT 0.40,
+ADD COLUMN IF NOT EXISTS win_rate_weight NUMERIC DEFAULT 0.25,
+ADD COLUMN IF NOT EXISTS rr_weight NUMERIC DEFAULT 0.20,
+ADD COLUMN IF NOT EXISTS consistency_weight NUMERIC DEFAULT 0.15,
+ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
+              </div>
+              <p className="text-[10px] text-text-secondary">Bu SQL komutunu Supabase Dashboard &gt; SQL Editor üzerinden çalıştırarak veritabanınızı güncelleyebilirsiniz.</p>
+            </div>
+          )}
+
+          {saveSuccess && (
+            <div className="p-4 bg-brand-success/10 border border-brand-success/30 rounded-xl text-sm text-brand-success font-semibold flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              <span>Sıralama kuralları başarıyla kaydedildi!</span>
+            </div>
+          )}
+
+          {rulesLoading ? (
+            <div className="py-12 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
+            </div>
+          ) : (
+            <form onSubmit={saveRules} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Max PnL */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Maksimum PnL Normalizasyonu ($)</label>
+                  <input
+                    type="number"
+                    value={maxPnL}
+                    onChange={(e) => setMaxPnL(Math.max(1, Number(e.target.value)))}
+                    className="w-full bg-black/30 border border-border-primary rounded-xl py-3 px-4 text-white focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none transition-all"
+                    required
+                    min={1}
+                  />
+                  <p className="text-[10px] text-text-secondary">PnL puanının 100 üzerinden hesaplanması için normalizasyon üst sınırı (Örn: 10000$ ve üzeri kârlar 100 tam puan alır).</p>
+                </div>
+
+                {/* Min Trades */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Minimum İşlem Sayısı</label>
+                  <input
+                    type="number"
+                    value={minTrades}
+                    onChange={(e) => setMinTrades(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-black/30 border border-border-primary rounded-xl py-3 px-4 text-white focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 outline-none transition-all"
+                    required
+                    min={0}
+                  />
+                  <p className="text-[10px] text-text-secondary">Kullanıcının Leaderboard'da listelenmesi için yapması gereken minimum işlem sayısı (0 = Herkes listelenir).</p>
+                </div>
+
+                {/* PnL Weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Toplam Kâr Ağırlığı (PnL)</label>
+                    <span className="text-xs font-bold text-white">{Math.round(pnlWeight * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={pnlWeight}
+                    onChange={(e) => setPnlWeight(Number(e.target.value))}
+                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                  />
+                  <p className="text-[10px] text-text-secondary">Trader'ın toplam kâr miktarının skora etkisi.</p>
+                </div>
+
+                {/* Win Rate Weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Kazanma Oranı Ağırlığı (Win Rate)</label>
+                    <span className="text-xs font-bold text-white">{Math.round(winRateWeight * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={winRateWeight}
+                    onChange={(e) => setWinRateWeight(Number(e.target.value))}
+                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                  />
+                  <p className="text-[10px] text-text-secondary">Kazanılan işlemlerin toplam işlemlere oranının skora etkisi.</p>
+                </div>
+
+                {/* Risk Reward Weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Risk Ödül Oranı Ağırlığı (R:R)</label>
+                    <span className="text-xs font-bold text-white">{Math.round(rrWeight * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={rrWeight}
+                    onChange={(e) => setRrWeight(Number(e.target.value))}
+                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                  />
+                  <p className="text-[10px] text-text-secondary">Ortalama işlem Risk:Ödül oranının skora etkisi.</p>
+                </div>
+
+                {/* Consistency Weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">İşlem Hacmi/İstikrar Ağırlığı</label>
+                    <span className="text-xs font-bold text-white">{Math.round(consistencyWeight * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={consistencyWeight}
+                    onChange={(e) => setConsistencyWeight(Number(e.target.value))}
+                    className="w-full h-1.5 bg-black/40 rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                  />
+                  <p className="text-[10px] text-text-secondary">Toplam işlem sıklığının (aktiflik/istikrar) skora etkisi.</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-border-primary flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingRules}
+                  className="px-6 py-3 bg-brand-purple hover:bg-brand-purple/80 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-lg flex items-center gap-2"
+                >
+                  {savingRules ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    'Ayarları Kaydet'
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   );
 };

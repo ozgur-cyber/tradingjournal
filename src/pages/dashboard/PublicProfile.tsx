@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, UserCheck, Activity, Target, TrendingUp, DollarSign, Users, Camera } from 'lucide-react';
+import { ArrowLeft, UserPlus, UserCheck, Activity, Target, TrendingUp, DollarSign, Users, Camera, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase/config';
 import { useSocialStore } from '@/store/socialStore';
 import { useAuthStore } from '@/store/authStore';
@@ -14,6 +14,8 @@ interface UserProfile {
   role: string;
   created_at: string;
   avatar_url?: string;
+  is_public?: boolean;
+  show_pnl?: boolean;
 }
 
 interface RecentTrade {
@@ -119,6 +121,8 @@ const PublicProfile = () => {
     }
   };
 
+  const isPrivate = profile && !profile.is_public && !isOwnProfile;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -135,6 +139,21 @@ const PublicProfile = () => {
         </div>
         <h2 className="text-2xl font-bold text-text-primary">Kullanıcı Bulunamadı</h2>
         <p className="text-text-secondary">Aradığınız profil mevcut değil veya silinmiş.</p>
+        <button onClick={() => navigate(-1)} className="px-4 py-2 mt-4 bg-brand-purple hover:bg-brand-purple/80 text-white rounded-lg transition-colors">
+          Geri Dön
+        </button>
+      </div>
+    );
+  }
+
+  if (isPrivate) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="w-20 h-20 bg-bg-surface-hover rounded-full flex items-center justify-center mb-2">
+          <EyeOff className="w-10 h-10 text-text-secondary" />
+        </div>
+        <h2 className="text-2xl font-bold text-text-primary">Gizli Profil</h2>
+        <p className="text-text-secondary text-sm">Bu kullanıcı profilini dış dünyaya kapatmıştır.</p>
         <button onClick={() => navigate(-1)} className="px-4 py-2 mt-4 bg-brand-purple hover:bg-brand-purple/80 text-white rounded-lg transition-colors">
           Geri Dön
         </button>
@@ -269,7 +288,7 @@ const PublicProfile = () => {
             </div>
           </div>
           <h3 className={`text-3xl font-bold ${profile.total_pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
-            ${(profile.total_pnl || 0).toFixed(2)}
+            {!profile.show_pnl && !isOwnProfile ? "$***.** (Gizli)" : `$${(profile.total_pnl || 0).toFixed(2)}`}
           </h3>
         </div>
       </div>
@@ -304,7 +323,7 @@ const PublicProfile = () => {
                 
                 <div className="text-right">
                   <p className={`font-bold ${trade.pnl >= 0 ? 'text-brand-success' : 'text-brand-danger'}`}>
-                    {trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}$
+                    {!profile.show_pnl && !isOwnProfile ? "***.**$" : `${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}$`}
                   </p>
                   <p className="text-xs text-text-secondary">
                     {new Date(trade.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}

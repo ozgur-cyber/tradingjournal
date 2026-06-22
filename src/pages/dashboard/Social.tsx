@@ -252,7 +252,6 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
   
   const isLiked = likedTrades.includes(trade.id);
   const isFollowing = followedUsers.includes(trade.username);
-  const tradeComments = comments.filter(c => c.tradeId === trade.id);
   
   const [baseLikeCount] = useState(0); 
   const totalLikes = baseLikeCount + (isLiked ? 1 : 0);
@@ -267,14 +266,6 @@ const SocialCard = ({ trade, getTimeAgo }: { trade: SocialTrade, getTimeAgo: (d:
 
   const handleFollow = () => {
     if (trade.username) toggleFollow(trade.username);
-  };
-
-
-  const submitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-    addComment(trade.id, 'Siz', newComment.trim());
-    setNewComment('');
   };
 
   const pnlPercent = trade.entry_price && trade.exit_price 

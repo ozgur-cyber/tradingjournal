@@ -85,4 +85,34 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 8. PLATFORM SETTINGS VE LEADERBOARD KURALLARI
+CREATE TABLE IF NOT EXISTS platform_settings (
+    id INT PRIMARY KEY DEFAULT 1,
+    admin_passcode VARCHAR(50) DEFAULT 'X4RS25',
+    max_pnl NUMERIC DEFAULT 10000,
+    pnl_weight NUMERIC DEFAULT 0.40,
+    win_rate_weight NUMERIC DEFAULT 0.25,
+    rr_weight NUMERIC DEFAULT 0.20,
+    consistency_weight NUMERIC DEFAULT 0.15,
+    min_trades INTEGER DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- İlk satırı ekle (yoksa)
+INSERT INTO platform_settings (id, admin_passcode) 
+VALUES (1, 'X4RS25') 
+ON CONFLICT (id) DO NOTHING;
+
+-- Eğer tablo zaten varsa ve sütunlar eksikse ekle
+ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS max_pnl NUMERIC DEFAULT 10000;
+ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS pnl_weight NUMERIC DEFAULT 0.40;
+ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS win_rate_weight NUMERIC DEFAULT 0.25;
+ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS rr_weight NUMERIC DEFAULT 0.20;
+ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS consistency_weight NUMERIC DEFAULT 0.15;
+ALTER TABLE platform_settings ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;
+
+-- 9. USER PRIVACY SETTINGS COLUMNS
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_pnl BOOLEAN DEFAULT true;
+
 -- SON

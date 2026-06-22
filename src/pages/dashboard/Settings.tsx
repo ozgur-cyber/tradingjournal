@@ -122,9 +122,84 @@ const Settings = () => {
   const [pushNotif, setPushNotif] = useState(true);
   const [marketingNotif, setMarketingNotif] = useState(false);
 
-  // Privacy State (Dummy)
-  const [publicProfile, setPublicProfile] = useState(true);
-  const [showPnL, setShowPnL] = useState(true);
+  // Privacy State
+  const [publicProfile, setPublicProfile] = useState(userData?.is_public ?? true);
+  const [showPnL, setShowPnL] = useState(userData?.show_pnl ?? true);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  React.useEffect(() => {
+    if (userData) {
+      setPublicProfile(userData.is_public ?? true);
+      setShowPnL(userData.show_pnl ?? true);
+    }
+  }, [userData]);
+
+  const handleTogglePublicProfile = async () => {
+    if (!user) return;
+    const newVal = !publicProfile;
+    setPublicProfile(newVal);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ is_public: newVal })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshUserData();
+    } catch (err) {
+      console.error("Görünürlük ayarı güncellenemedi:", err);
+      alert("Ayarlar güncellenirken hata oluştu.");
+    }
+  };
+
+  const handleToggleShowPnL = async () => {
+    if (!user) return;
+    const newVal = !showPnL;
+    setShowPnL(newVal);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ show_pnl: newVal })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshUserData();
+    } catch (err) {
+      console.error("PnL görünürlük ayarı güncellenemedi:", err);
+      alert("Ayarlar güncellenirken hata oluştu.");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (!confirm("HESABINIZI KALICI OLARAK SİLMEK İSTEDİĞİNİZE EMİN MİSİNİZ?\n\nBu işlem geri alınamaz! Tüm işlemleriniz, stratejileriniz, profiliniz ve oturumunuz tamamen silinecektir.")) {
+      return;
+    }
+    const check = prompt("Hesabınızı silmek için 'onaylıyorum' yazın:");
+    if (check !== "onaylıyorum") {
+      alert("İşlem onaylanmadığı için iptal edildi.");
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      // 1. İlişkili verileri sil
+      await supabase.from('trades').delete().eq('user_id', user.id);
+      await supabase.from('strategies').delete().eq('user_id', user.id);
+      await supabase.from('leaderboard_exclusions').delete().eq('user_id', user.id);
+      await supabase.from('users').delete().eq('id', user.id);
+
+      // 2. Auth kullanıcısını sil (Supabase Admin API ile)
+      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      if (error) throw error;
+
+      alert("Hesabınız ve tüm verileriniz başarıyla silinmiştir.");
+      window.location.href = "/";
+    } catch (err: any) {
+      console.error("Hesap silme hatası:", err);
+      alert(`Hesap silinirken bir hata oluştu: ${err.message}`);
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-10">
@@ -452,7 +527,7 @@ const Settings = () => {
                     <p className="text-xs text-text-secondary mt-1">Profilinizin Sosyal Akış ve Leaderboard'da görünmesine izin verin.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={publicProfile} onChange={() => setPublicProfile(!publicProfile)} />
+                    <input type="checkbox" className="sr-only peer" checked={publicProfile} onChange={handleTogglePublicProfile} />
                     <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-purple"></div>
                   </label>
                 </div>
@@ -463,7 +538,7 @@ const Settings = () => {
                     <p className="text-xs text-text-secondary mt-1">Sosyal akışta sadece işlemin yönü ve stratejisi görünsün, $ miktarları gizlensin.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={!showPnL} onChange={() => setShowPnL(!showPnL)} />
+                    <input type="checkbox" className="sr-only peer" checked={!showPnL} onChange={handleToggleShowPnL} />
                     <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-purple"></div>
                   </label>
                 </div>
@@ -477,8 +552,12 @@ const Settings = () => {
                     <p className="text-text-primary font-bold text-sm">Hesabı Kalıcı Olarak Sil</p>
                     <p className="text-text-secondary text-xs mt-1">Tüm işlem geçmişiniz, verileriniz ve ayarlarınız geri döndürülemez şekilde silinir.</p>
                   </div>
-                  <button className="px-4 py-2 bg-brand-danger/20 hover:bg-brand-danger text-brand-danger hover:text-white transition-colors rounded-lg text-sm font-bold whitespace-nowrap">
-                    Hesabımı Sil
+                  <button 
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
+                    className="px-4 py-2 bg-brand-danger/20 hover:bg-brand-danger text-brand-danger hover:text-white transition-colors rounded-lg text-sm font-bold whitespace-nowrap disabled:opacity-50"
+                  >
+                    {deletingAccount ? "Siliniyor..." : "Hesabımı Sil"}
                   </button>
                 </div>
               </div>
