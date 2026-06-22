@@ -383,7 +383,8 @@ ADD COLUMN IF NOT EXISTS pnl_weight NUMERIC DEFAULT 0.40,
 ADD COLUMN IF NOT EXISTS win_rate_weight NUMERIC DEFAULT 0.25,
 ADD COLUMN IF NOT EXISTS rr_weight NUMERIC DEFAULT 0.20,
 ADD COLUMN IF NOT EXISTS consistency_weight NUMERIC DEFAULT 0.15,
-ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0;`}
+ADD COLUMN IF NOT EXISTS min_trades INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();`}
               </div>
               <p className="text-[10px] text-text-secondary">Bu SQL komutunu Supabase Dashboard &gt; SQL Editor üzerinden çalıştırarak veritabanınızı güncelleyebilirsiniz.</p>
             </div>
